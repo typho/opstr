@@ -1,0 +1,90 @@
+README
+======
+
+author::
+  tajpulo
+version::
+  0.6.0
+
+What is it about?
+-----------------
+
+As a software developer, I often need to look at strings and apply operations to it.
+I frequently use python on the commandline or resort to client-side web applications.
+But the operations are always the same and should be accessible with one CLI call.
+
+I built opstr, so you can throw a bunch of strings in and get the result of various operations out.
+Or you specify an operation and get a predictable result.
+
+Why should I use it?
+--------------------
+
+To apply operations to strings.
+
+Who should use it?
+------------------
+
+Anyone working with text strings (in the Unicode sense: as sequence of codepoints).
+
+How to install
+--------------
+
+Install me via crates.io:
+
+[source]
+opstr = "0.6.0"
+
+How to run
+----------
+
+1. Go to https://github.com/typho/opstr
+2. Click on the Releases link
+3. Scroll down, choose the download appropriate for your platform
+4. Once the download has finished, extract the files of the tar-gz archive
+5. Add executable rights to the file of your platform
+6. Run the executable opstr on the command line
+
+Adding your own function
+------------------------
+
+If you have a new function to implement …
+
+1. Decide the CATEGORY it fits into (e.g. "charsets")
+2. Decide upon a function NAME
+3. Create the file src/ops/CATEGORY/NAME.rs
+4. Add the function to src/ops/mod.rs
+5. The file must implement the function with one of the traits from src/ops/traits.rs
+
+Release management
+------------------
+
+
+
+// TODO https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
+// TODO https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt
+
+Future plans
+------------
+
+
+
+Source Code
+-----------
+
+The source code is available at link:https://github.com/typho/opstr[Github].
+
+License
+-------
+
+See link:LICENSE[the LICENSE file] (Hint: MIT license).
+
+Changelog
+---------
+
+0.7.0:: first public release
+1.0.0:: release with backwards compatibility guarantees for the existence of introduced ops and their associated semantics
+
+Issues
+------
+
+Please report any issues on the link:https://github.com/typho/opstr/issues[Github issues page].
