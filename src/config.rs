@@ -176,6 +176,7 @@ pub enum ColorScheme {
 
 impl Eq for ColorScheme {}
 
+// TODO: use termcolor instead
 impl ColorScheme {
     /// Take a name and return the corresponding ColorScheme instance (or None, if unknown)
     pub fn by_name(scheme: &str) -> Option<Self> {
@@ -203,12 +204,7 @@ impl ColorScheme {
     pub fn end_list(&self) {}
     pub fn start_list_item(&self) {
         match self {
-            ColorScheme::Default => {
-                //print!("\x1B[38;2;240;200;50m")
-                let mut stdout = StandardStream::stdout(ColorChoice::Always);
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
-                writeln!(&mut stdout, "green text!")?;
-            },
+            ColorScheme::Default => print!("\x1B[38;2;240;200;50m"),
             ColorScheme::NoColors => {},
             ColorScheme::YellowBlue => print!("\x1B[38;2;196;70;1m"),
         };
