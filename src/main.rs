@@ -26,7 +26,7 @@ struct Opts {
     item: Option<isize>,
     #[clap(long, help = "if an association/table is returned, return key `column` or only column name `column`, else ignore this option")]
     column: Option<String>,
-    #[clap(long, help = "color scheme like NONE")]
+    #[clap(long, help = "color scheme like none, default, or regularandbold")]
     color_scheme: Option<String>,
     #[clap(long, help = "locale to be used for locale-dependent operations")]
     locale: Option<String>,
@@ -48,25 +48,26 @@ fn main() -> Result<(), Errors> {
     }
 
     let mut conf = Configuration::default();
-    conf.overwrite_with_env().map_or(Ok(()), |m| { Err(m) })?;
-    conf.overwrite_with_clap(opts.radix, opts.item, opts.column, opts.hex_upper, opts.color_scheme, opts.locale, opts.syntax).map_or(Ok(()), |m| { Err(m) })?;
+    conf.overwrite_with_env()?;
+    conf.overwrite_with_clap(opts.radix, opts.item, opts.column, opts.hex_upper, opts.color_scheme, opts.locale, opts.syntax)?;
 
     if opts.list_ops {
         // list all operations
-        opstr::list_ops(&conf, &args).print(&conf);
+        opstr::list_ops(&conf, &args).print(&conf)?;
 
     } else if let Some(op_name) = opts.op {
         // apply the mentioned operation
         match opstr::run_op(&conf, &args, &op_name) {
-            Ok((_fn_name, fn_output)) => fn_output.print(&conf),
+            Ok((_fn_name, fn_output)) => fn_output.print(&conf)?,
             Err(err) => {
-                println!("Error: {}", err);
+                conf.color_scheme.error_label("ERROR")?;
+                eprintln!(": {}", err);
                 process::exit(2);
             },
         };
 
     } else {
-        opstr::run_unspecified_op(&conf, &args);
+        opstr::run_unspecified_op(&conf, &args)?;
     }
 
     Ok(())

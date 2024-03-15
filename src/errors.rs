@@ -1,4 +1,5 @@
 use std::fmt;
+use std::io;
 
 use crate::range::Range;
 
@@ -25,6 +26,15 @@ pub enum Errors {
     /// internal error, where generated data does not satisfy required format;
     /// specified by an error message.
     InvalidData(String),
+    /// internal error related to I/O; specified by an error message.
+    IOError(String),
+}
+
+
+impl From<io::Error> for Errors {
+    fn from(err: io::Error) -> Self {
+        Errors::IOError(err.to_string())
+    }
 }
 
 impl fmt::Display for Errors {
@@ -37,6 +47,7 @@ impl fmt::Display for Errors {
             Self::ArgumentCountError(expected, actual) => write!(f, "invalid number of CLI arguments, expected {} got {}", expected, actual),
             Self::UnknownOp(op) => write!(f, "unknown operation '{}'", op),
             Self::InvalidData(msg) => write!(f, "internal data error: '{}'", msg),
+            Self::IOError(msg) => write!(f, "I/O error: '{}'", msg),
         }
     }
 }

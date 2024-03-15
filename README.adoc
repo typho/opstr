@@ -9,7 +9,7 @@ version::
 What is it about?
 -----------------
 
-As a software developer, I often need to look at strings and apply operations to it.
+As a software developer, I often need to look at strings and apply operations to them.
 I frequently use python on the commandline or resort to client-side web applications.
 But the operations are always the same and should be accessible with one CLI call.
 

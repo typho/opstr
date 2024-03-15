@@ -3,8 +3,10 @@ use crate::errors::Errors;
 use std::default;
 use std::env;
 use std::fmt;
+use std::io;
 
-use termcolor::StandardStreamLock;
+use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Global application settings (mainly to configure representation)
 #[derive(Clone, Debug, Hash, PartialEq)]
@@ -41,7 +43,7 @@ impl default::Default for Configuration {
         Self {
             radix: 10,
             alpha_upper: true,
-            color_scheme: ColorScheme::NoColors,
+            color_scheme: ColorScheme::default(),
             item: None,
             column: None,
             locale: String::from("en-US"),
@@ -51,10 +53,10 @@ impl default::Default for Configuration {
 }
 
 impl Configuration {
-    pub fn overwrite_with_clap(&mut self, out_radix: Option<u8>, out_item: Option<isize>, out_column: Option<String>, out_alpha_upper: Option<bool>, out_color_scheme: Option<String>, out_locale: Option<String>, out_syntax: Option<String>) -> Option<Errors> {
+    pub fn overwrite_with_clap(&mut self, out_radix: Option<u8>, out_item: Option<isize>, out_column: Option<String>, out_alpha_upper: Option<bool>, out_color_scheme: Option<String>, out_locale: Option<String>, out_syntax: Option<String>) -> Result<(), Errors> {
         if let Some(radix) = out_radix {
             if !(radix == 2 || radix == 10 || radix == 16) {
-                return Some(Errors::CLIValueError("out-radix", "Only radices 2, 10, and 16 are supported".to_string()));
+                return Err(Errors::CLIValueError("out-radix", "Only radices 2, 10, and 16 are supported".to_string()));
             }
             self.radix = out_radix.unwrap_or(10) as usize;
         }
@@ -76,7 +78,7 @@ impl Configuration {
         if let Some(color_scheme) = out_color_scheme {
             match ColorScheme::by_name(&color_scheme) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Some(Errors::CLIValueError("out-color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(Errors::CLIValueError("out-color-scheme", "Unknown color scheme".to_string())),
             }
         }
 
@@ -91,28 +93,28 @@ impl Configuration {
                 "c" => Syntax::C,
                 "c++" | "cpp" => Syntax::Cpp,
                 "golang" | "go" => Syntax::Golang,
-                "human" => Syntax::Human,
+                "human" | "default" => Syntax::Human,
                 "java" => Syntax::Java,
                 "kotlin" => Syntax::Kotlin,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Some(Errors::CLIValueError("out-syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(Errors::CLIValueError("out-syntax", "Sorry, no support yet".to_string())),
             };
         }
 
-        None
+        Ok(())
     }
 
-    pub fn overwrite_with_env(&mut self) -> Option<Errors> {
+    pub fn overwrite_with_env(&mut self) -> Result<(), Errors> {
         if let Ok(val) = env::var("OPSTR_RADIX") {
             match val.parse::<u8>() {
                 Ok(r) => {
                     self.radix = r as usize;
                     if !(r == 2 || r == 10 || r == 16) {
-                        return Some(Errors::CLIValueError("out-radix", "Only radices 2, 10, and 16 are supported".to_string()));
+                        return Err(Errors::CLIValueError("out-radix", "Only radices 2, 10, and 16 are supported".to_string()));
                     }            
                 },
-                Err(_) => return Some(Errors::CLIValueError("OPSTR_RADIX", "env value is not an integer".to_string())),
+                Err(_) => return Err(Errors::CLIValueError("OPSTR_RADIX", "env value is not an integer".to_string())),
             }
         }
 
@@ -126,7 +128,7 @@ impl Configuration {
         if let Ok(val) = env::var("OPSTR_COLOR_SCHEME") {
             match ColorScheme::by_name(&val) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Some(Errors::CLIValueError("out-color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(Errors::CLIValueError("out-color-scheme", "Unknown color scheme".to_string())),
             }
         }
 
@@ -146,11 +148,11 @@ impl Configuration {
                 "kotlin" => Syntax::Kotlin,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Some(Errors::CLIValueError("out-syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(Errors::CLIValueError("out-syntax", "Sorry, no support yet".to_string())),
             };
         }
 
-        None
+        Ok(())
     }
 }
 
@@ -170,13 +172,12 @@ pub enum ColorScheme {
     NoColors,
     #[default]
     Default,
-    YellowBlue,
+    RegularAndBold,
     // TODO more schemes
 }
 
 impl Eq for ColorScheme {}
 
-// TODO: use termcolor instead
 impl ColorScheme {
     /// Take a name and return the corresponding ColorScheme instance (or None, if unknown)
     pub fn by_name(scheme: &str) -> Option<Self> {
@@ -184,60 +185,179 @@ impl ColorScheme {
         match scheme.to_ascii_lowercase().as_str() {
             "none" => Some(NoColors),
             "default" => Some(Default),
-            "yellowblue" => Some(YellowBlue),
+            "regularandbold" => Some(RegularAndBold),
             _ => None,
         }
     }
 
-    /// Does this color scheme use any colors?
-    pub fn uses_colors(&self) -> bool {
-        *self != ColorScheme::NoColors
+    /// Return the ColorChoice for the configured color scheme
+    pub fn color_choice(&self) -> ColorChoice {
+        match self {
+            ColorScheme::NoColors | ColorScheme::RegularAndBold => ColorChoice::Never,
+            _ => ColorChoice::AlwaysAnsi,
+        }
     }
 
-    // TODO: use termcolor
+    /// represents an operation like ``----- hello-world ---------``
+    pub fn op_section(&self, op_name: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            println!("----- {} {}", op_name, "-".repeat((65 - op_name.len()).max(0)));
+            return Ok(());
+        }
 
-    pub fn start_note(&self) {} // NOTE: must send to stderr, not stdout
-    pub fn end_note(&self) {} // NOTE: must send to stderr, not stdout
-    pub fn start_scalar(&self) {}
-    pub fn end_scalar(&self) {}
-    pub fn start_list(&self) {}
-    pub fn end_list(&self) {}
-    pub fn start_list_item(&self) {
+        let mut stdout = StandardStream::stdout(self.color_choice());
         match self {
-            ColorScheme::Default => print!("\x1B[38;2;240;200;50m"),
             ColorScheme::NoColors => {},
-            ColorScheme::YellowBlue => print!("\x1B[38;2;196;70;1m"),
+            ColorScheme::Default => {
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+                write!(&mut stdout, "----- ")?;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
+                write!(&mut stdout, "{}", op_name)?;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+                writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
+            },
+            ColorScheme::RegularAndBold => {
+                write!(&mut stdout, "----- ")?;
+                stdout.set_color(ColorSpec::new().set_bold(true))?;
+                write!(&mut stdout, "{}", op_name)?;
+                stdout.reset()?;
+                writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
+            },
         };
+        stdout.reset()?;
+        Ok(())
     }
-    pub fn end_list_item(&self) {
-        match self {
-            ColorScheme::Default => print!("\x1B[39;49m"),
-            ColorScheme::NoColors => {},
-            ColorScheme::YellowBlue => print!("\x1B[39;49m"),
-        };
+
+    /// represents a note label like ``NOTE: `` in ``NOTE: recognize this Unicode codepoint``
+    pub fn note_label(&self, label: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            print!("{}", label);
+            return Ok(());
+        }
+
+        let mut stderr = StandardStream::stderr(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stderr.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_fg(Some(Color::Magenta)),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stderr, "{}", label)?;
+        stderr.reset()?;
+        Ok(())
     }
-    pub fn start_assoc(&self) {}
-    pub fn end_assoc(&self) {}
-    pub fn start_assoc_key(&self) {}
-    pub fn end_assoc_key(&self) {}
-    pub fn start_assoc_value(&self) {}
-    pub fn end_assoc_value(&self) {}
-    pub fn start_table(&self) {}
-    pub fn end_table(&self) {}
-    pub fn start_table_header(&self) {}
-    pub fn end_table_header(&self) {}
-    pub fn start_table_header_item(&self) {}
-    pub fn end_table_header_item(&self) {}
-    pub fn start_table_cell(&self) {}// TODO: this cannot be called if a table row is represented through Output::HeterogeneousList.print(…)
-    pub fn end_table_cell(&self) {}
-    pub fn start_op_item(&self, name: &str) {
-        match self {
-            ColorScheme::Default => println!("\x1b[0;33;49m{} \x1b[1;39;49m{} \x1b[0;33;49m{}\x1b[0;39;49m", "-".repeat(5), name, "-".repeat(80 - 2 - 5 - name.len())),
-            ColorScheme::NoColors => {},
-            ColorScheme::YellowBlue => println!("\x1b[0;33;49m{} \x1b[1;34;49m{} \x1b[0;33;49m{}\x1b[0;39;49m", "-".repeat(5), name, "-".repeat(80 - 2 - 5 - name.len())),
-        };
+
+    /// represents a error label like ``ERROR: `` in ``ERROR: argument invalid``
+    pub fn error_label(&self, label: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            eprint!("{}", label);
+            return Ok(());
+        }
+
+        let mut stderr = StandardStream::stderr(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stderr.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_fg(Some(Color::Red)),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stderr, "{}", label)?;
+        stderr.flush()?;
+        stderr.reset()?;
+        Ok(())
     }
-    pub fn end_op_item(&self, _name: &str) {}
+
+    /// represents a keyword like a column header or type name
+    pub fn keyword(&self, word: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            print!("{}", word);
+            return Ok(());
+        }
+
+        let mut stdout = StandardStream::stdout(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stdout.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_fg(Some(Color::White)),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stdout, "{}", word)?;
+        stdout.reset()?;
+        Ok(())
+    }
+
+    pub fn outer_wrapper(&self, wrapper: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            print!("{}", wrapper);
+            return Ok(());
+        }
+
+        let mut stdout = StandardStream::stdout(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stdout.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_bold(true),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stdout, "{}", wrapper)?;
+        stdout.reset()?;
+        Ok(())
+    }
+
+    pub fn outer_separator(&self, sep: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            print!("{}", sep);
+            return Ok(());
+        }
+
+        let mut stdout = StandardStream::stdout(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stdout.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_bold(true),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stdout, "{}", sep)?;
+        stdout.reset()?;
+        Ok(())
+    }
+
+
+    pub fn inner_wrapper(&self, wrapper: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            print!("{}", wrapper);
+            return Ok(());
+        }
+
+        let mut stdout = StandardStream::stdout(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stdout.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_bold(true).set_fg(Some(Color::Blue)),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stdout, "{}", wrapper)?;
+        stdout.reset()?;
+        Ok(())
+    }
+
+    pub fn inner_separator(&self, sep: &str) -> io::Result<()> {
+        if self == &ColorScheme::NoColors {
+            print!("{}", sep);
+            return Ok(());
+        }
+
+        let mut stdout = StandardStream::stdout(self.color_choice());
+        let mut cs = ColorSpec::new();
+        stdout.set_color(match self {
+            ColorScheme::NoColors => &cs,
+            ColorScheme::Default => cs.set_bold(true).set_fg(Some(Color::Green)),
+            ColorScheme::RegularAndBold => cs.set_bold(true),
+        })?;
+        write!(&mut stdout, "{}", sep)?;
+        stdout.reset()?;
+        Ok(())
+    }
 }
 
 impl fmt::Display for ColorScheme {
@@ -246,7 +366,7 @@ impl fmt::Display for ColorScheme {
         match self {
             NoColors => f.write_str("None"),
             Default => f.write_str("Default"),
-            YellowBlue => f.write_str("YellowBlue"),
+            RegularAndBold => f.write_str("RegularAndBold"),
         }
     }
 }
@@ -264,7 +384,6 @@ pub enum Syntax {
     Java,
     Kotlin,
     Rust,
-    // TODO desired support: rust, bash.
 }
 
 impl Syntax {

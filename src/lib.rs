@@ -17,7 +17,6 @@ pub(crate) mod input;
 pub(crate) mod matcher;
 pub(crate) mod ops;
 pub(crate) mod range;
-pub(crate) mod repr;
 pub(crate) mod output;
 
 pub use config::Configuration;

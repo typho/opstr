@@ -3,8 +3,10 @@
 
 use crate::config::Configuration;
 use crate::config::Syntax;
+use crate::errors::Errors;
 
 use std::collections;
+use std::io;
 
 #[derive(Clone, Debug, Hash, PartialEq)]
 pub enum OutputValue {
@@ -342,6 +344,12 @@ pub enum Output {
 
 impl Eq for Output {}
 
+type Err = Result<(), Errors>;
+
+fn io2errs(e: io::Error) -> Errors {
+    <std::io::Error as Into<Errors>>::into(e)
+}
+
 impl Output {
     /// Create an `Output` element from the provided list of `OutputValue` items
     pub fn from_value_list(value_list: &[OutputValue], notes: &[String]) -> Output {
@@ -431,7 +439,7 @@ impl Output {
         }
     }
 
-    pub fn print(&self, conf: &Configuration) {
+    pub fn print(&self, conf: &Configuration) -> Err {
         if let Some(idx) = conf.item {
             if let Some(col) = &conf.column {
                 self.reduce_by_column(conf, col).reduce_by_index(conf, idx).print_internally(conf)
@@ -547,8 +555,7 @@ impl Output {
         }
     }
 
-
-    fn print_internally(&self, conf: &Configuration) {
+    fn print_internally(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -558,9 +565,8 @@ impl Output {
             Output::Association { notes, .. } |
             Output::Table { notes, .. } => {
                 for note in notes {
-                    col.start_note();
-                    eprintln!("NOTE: {}", note);
-                    col.end_note();
+                    col.note_label("NOTE").map_err(io2errs)?;
+                    eprintln!(": {}", note);
                 }
             }
         }
@@ -573,65 +579,82 @@ impl Output {
             Syntax::Kotlin => self.print_kotlin(conf),
             Syntax::Python => self.print_python(conf),
             Syntax::Rust => self.print_rust(conf),
-        }
+        }?;
+
+        Ok(())
     }
 
-    pub fn print_c_cpp(&self, conf: &Configuration) {
+    pub fn print_c_cpp(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
             Output::Scalar { data, .. } => {
-                col.start_scalar();
                 println!("{}", data.represent_c_cpp(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList { data,  .. } => {
                 if data.is_empty() {
-                    println!("int list[0] = {{}};");
+                    print!("int ");
+                    col.keyword("list")?;
+                    print!("[0] = ");
+                    col.inner_wrapper("{}")?;
+                    println!(";");
                 } else {
-                    col.start_list();
-                    print!("{} list[{}] = {{", data[0].typename(conf), data.len());
+                    print!("{} ", data[0].typename(conf));
+                    col.keyword("list")?;
+                    print!("[{}] = ", data.len());
+                    col.inner_wrapper("{")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         print!("{}", elem.represent_c_cpp(conf));
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("}};");
-                    col.end_list();
+                    col.inner_wrapper("}")?;
+                    println!(";");
                 }
             },
             Output::HeterogeneousList { data, .. } => {
-                eprintln!("NOTE: heterogeneous lists cannot be handled in this syntax!");
+                col.note_label("NOTE")?;
+                eprintln!(": heterogeneous lists cannot be handled in this syntax!");
 
                 if data.is_empty() {
-                    println!("int list[0] = {{}};");
-                    return;
+                    print!("int ");
+                    col.keyword("list")?;
+                    print!("[0] = ");
+                    col.inner_wrapper("{}")?;
+                    println!(";");
+                    return Ok(());
                 }
 
-                col.start_list();
-                print!("void* list[{}] = {{", data.len());
+                print!("void* ");
+                col.keyword("list")?;
+                print!("[{}] = ", data.len());
+                col.inner_wrapper("{")?;
                 for (i, elem) in data.iter().enumerate() {
-                    col.start_list_item();
                     print!("{}", elem.represent_c_cpp(conf));
-                    col.end_list_item();
 
                     if i != data.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!("}};");
-                col.end_list();
+                col.inner_wrapper("}")?;
+                println!(";");
             },
             Output::Association { data, .. } => {
                 // TODO sort by keys
                 if data.is_empty() {
-                    println!("int keys[0] = {{}};");
-                    println!("int values[0] = {{}};");
-                    return;
+                    print!("int ");
+                    col.keyword("keys")?;
+                    print!("[0] = ");
+                    col.inner_wrapper("{}")?;
+                    println!(";");
+                    print!("int ");
+                    col.keyword("values")?;
+                    print!("[0] = ");
+                    col.inner_wrapper("{}")?;
+                    println!(";");
+                    return Ok(());
                 }
 
                 let keys = &Vec::from_iter(data.keys().cloned());
@@ -640,134 +663,134 @@ impl Output {
                 let key_list = Output::from_value_list(keys, &[]);
                 let value_list = Output::from_value_list(values, &[]);
 
-                col.start_assoc();
-                print!("// {} keys and values", data.len());
-                // NOTE: no col.start_assoc_key, no col.start_assoc_value, no proper variable name for two lists, …
+                println!("// {} keys and values", data.len());
+                // NOTE: no proper variable name for two lists, no improved coloring, …
                 //       I did not put a lot of effort into this.
-                key_list.print_c_cpp(conf);
-                value_list.print_c_cpp(conf);
-                col.end_assoc();
+                key_list.print_c_cpp(conf)?;
+                value_list.print_c_cpp(conf)?;
             },
             Output::Table { data, column_headers, .. } => {
                 // generate representation
-                col.start_table();
-                col.start_table_header();
-                print!("const char* headers[{}] = {{", column_headers.len());
+                print!("const char* ");
+                col.keyword("headers")?;
+                print!("[{}] = ", column_headers.len());
+                col.inner_wrapper("{")?;
                 for (i, description) in column_headers.iter().enumerate() {
-                    col.start_table_header_item();
                     let header = OutputValue::SingleLineText(description.to_owned());
                     print!("{}", header.represent_c_cpp(conf));
-                    col.end_table_header_item();
                     if i != column_headers.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!("}}");
-                col.end_table_header();
+                col.inner_wrapper("}")?;
+                println!(";");
 
                 if data.is_empty() {
-                    println!("int table[0][0] = {{}};");
-                    return;
+                    print!("int ");
+                    col.keyword("table")?;
+                    print!("[0][0] = ");
+                    col.inner_wrapper("{}")?;
+                    println!(";");
+                    return Ok(());
                 }
 
-                // NOTE: no col.start_table_cell, no two-dimensional array, …
+                // NOTE: no special coloring, no two-dimensional array, …
                 //       I did not put a lot of effort into this.
-                col.start_table();
                 for row in data.iter() {
                     let list = Output::from_value_list(row, &[]);
-                    list.print_c_cpp(conf);
+                    list.print_c_cpp(conf)?;
                 }
-                col.end_table();
             },
         }
+
+        Ok(())
     }
 
-    pub fn print_golang(&self, conf: &Configuration) {
+    pub fn print_golang(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
             Output::Scalar { data, .. } => {
-                col.start_scalar();
                 println!("{}", data.represent_golang(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList{ data, .. } => {
                 if data.is_empty() {
-                    println!("[]int64{{}}");
+                    print!("[]");
+                    col.keyword("int64")?;
+                    col.inner_wrapper("{}")?;
+                    println!(";");
                 } else {
-                    col.start_list();
-                    print!("[]{}{{", data[0].typename(conf));
+                    print!("[]");
+                    col.keyword(data[0].typename(conf))?;
+                    col.inner_wrapper("{")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         print!("{}", elem.represent_golang(conf));
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("}}");
-                    col.end_list();
+                    col.inner_wrapper("}")?;
+                    println!("");
                 }
             },
             Output::HeterogeneousList{ data, .. } => {
                 if data.is_empty() {
-                    println!("[]any{{}}");
+                    print!("[]");
+                    col.keyword("any")?;
+                    col.inner_wrapper("{}")?;
+                    println!(";");
                 } else {
-                    col.start_list();
-                    print!("[]any{{");
+                    print!("[]");
+                    col.keyword("any")?;
+                    col.inner_wrapper("{")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         print!("{}", elem.represent_golang(conf));
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("}}");
-                    col.end_list();
+                    col.inner_wrapper("}")?;
+                    println!("");
                 }
             },
             Output::Association { data, .. } => {
                 // TODO sort by keys
                 // TODO introduce special case if data.is_homogeneous()?
-                col.start_assoc();
-                print!("map[any]any{{");
+                print!("map[");
+                col.keyword("any")?;
+                print!("]");
+                col.keyword("any")?;
+                col.outer_wrapper("{")?;
                 for (i, (key, value)) in data.iter().enumerate() {
-                    col.start_assoc_key();
                     print!("{}", key.represent_golang(conf));
-                    col.end_assoc_key();
 
-                    print!(": ");
+                    col.inner_separator(": ")?;
 
-                    col.start_assoc_value();
                     print!("{}", value.represent_golang(conf));
-                    col.end_assoc_value();
 
                     if i != data.len() - 1 {
-                        print!(", ");
+                        col.outer_separator(", ")?;
                     }
                 }
-                println!("}}");
-                col.end_assoc();
+                col.outer_wrapper("}")?;
+                println!("");
             },
             Output::Table { data, column_headers, .. } => {
                 // generate representation
-                col.start_table();
-                col.start_table_header();
-                print!("header := []string{{");
+                print!("header := []");
+                col.keyword("string")?;
+                col.inner_wrapper("{")?;
                 for (i, description) in column_headers.iter().enumerate() {
-                    col.start_table_header_item();
                     let header = OutputValue::SingleLineText(description.to_owned());
                     print!("{}", header.represent_golang(conf));
-                    col.end_table_header_item();
                     if i != column_headers.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!("}}");
-                col.end_table_header();
+                col.inner_wrapper("}")?;
+                println!("");
 
                 // are all types the same?
                 let mut typename = "";
@@ -782,69 +805,60 @@ impl Output {
                     typename = "any";
                 }
 
-                print!("[][]{}", typename);
-                print!("{{");
+                print!("[][]");
+                col.keyword(typename)?;
+                col.outer_wrapper("{")?;
                 for (i, row) in data.iter().enumerate() {
                     let list = Output::from_value_list(row, &[]);
-                    list.print_golang(conf);
+                    list.print_golang(conf)?;
                     if i != row.len() - 1 {
-                        print!(", ");
+                        col.outer_separator(", ")?;
                     }
                 }
-                println!("}}");
-                col.end_table();
+                col.outer_wrapper("}")?;
+                println!("");
             },
         }
+
+        Ok(())
     }
 
-    pub fn print_human(&self, conf: &Configuration) {
+    pub fn print_human(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
             Output::Scalar{ data: scalar, .. } => {
-                col.start_scalar();
                 println!("{}", scalar.represent_human(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList{ data: list, .. } |
             Output::HeterogeneousList{ data: list, .. } => {
                 //let mut any_is_multiline = false;
-                col.start_list();
-                print!("[ ");
+                col.inner_wrapper("[ ")?;
                 for (i, elem) in list.iter().enumerate() {
-                    col.start_list_item();
                     println!("{}", elem.represent_human(conf));
-                    col.end_list_item();
 
                     if i != list.len() - 1 {
-                        print!("| ");
+                        col.inner_separator("| ")?;
                     }
                 }
-                println!("]");
-                col.end_list();
+                col.inner_wrapper("]")?;
+                println!("");
             },
             Output::Association{ data: assoc, .. } => {
                 // TODO sort by keys
-                col.start_assoc();
-                print!("{{ ");
+                col.outer_wrapper("{ ")?;
                 for (i, (key, value)) in assoc.iter().enumerate() {
                     if i != 0 {
                         println!();
-                        print!("| ");
+                        col.outer_separator("| ")?;
                     }
 
-                    col.start_assoc_key();
                     print!("{}", key.represent_human(conf));
-                    col.end_assoc_key();
-
-                    print!(":: ");
-
-                    col.start_assoc_value();
+                    col.inner_separator(":: ")?;
                     print!("{}", value.represent_human(conf));
-                    col.end_assoc_value();
                 }
-                println!("}}");
-                col.end_assoc();
+                col.outer_wrapper("}")?;
+                println!("");
             },
             Output::Table{ column_headers, data: table_data, .. } => {
                 // compute column widths
@@ -859,320 +873,330 @@ impl Output {
                 }
 
                 // generate representation
-                col.start_table();
-                col.start_table_header();
                 for (description, width) in column_headers.iter().zip(&column_widths) {
-                    col.start_table_header_item();
-                    print!("{0: <width$}", description, width=width);
-                    col.end_table_header_item();
+                    col.keyword(&format!("{0: <width$}", description, width=width))?;
                     print!(" ");
                 }
                 println!();
                 for width in column_widths.iter() {
-                    col.start_table_header_item();
-                    print!("{}", "─".repeat(*width));
-                    col.end_table_header_item();
+                    col.inner_separator(&format!("{}", "─".repeat(*width)))?;
                     print!(" ");
                 }
                 println!();
-                col.end_table_header();
 
                 // TODO continuous line below table header?
 
                 for row in table_data.iter() {
                     for (column, width) in row.iter().zip(&column_widths) {
-                        col.start_table_cell();
                         print!("{: <width$}", column.represent_human(conf), width=width);
-                        col.end_table_cell();
                         print!(" ");
                     }
                     println!();
                 }
-                col.end_table();
             },
         }
+
+        Ok(())
     }
 
-    pub fn print_java(&self, conf: &Configuration) {
+    pub fn print_java(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
             Output::Scalar { data, .. } => {
-                col.start_scalar();
                 println!("{}", data.represent_java(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList { data,  .. } => {
                 if data.is_empty() {
-                    println!("new int[]{{}};");
+                    print!("new ");
+                    col.keyword("int")?;
+                    print!("[]");
+                    col.outer_wrapper("{}")?;
+                    println!(";");
                 } else {
-                    col.start_list();
-                    print!("new {}[] = {{", data[0].typename(conf));
+                    print!("new ");
+                    col.keyword(data[0].typename(conf))?;
+                    print!("[] = ");
+                    col.inner_wrapper("{")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         print!("{}", elem.represent_java(conf));
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("}};");
-                    col.end_list();
+                    col.inner_wrapper("}")?;
+                    println!(";");
                 }
             },
             Output::HeterogeneousList { data, .. } => {
                 if data.is_empty() {
-                    println!("List<Object> items = new ArrayList();");
-                    return;
+                    println!("List<");
+                    col.keyword("Object")?;
+                    print!("> items = new ");
+                    col.keyword("ArrayList")?;
+                    println!("();");
+                    return Ok(());
                 }
 
-                col.start_list();
-                print!("List<Object> items = Arrays.asList(");
+                print!("List<Object> items = ");
+                println!("List<Object> ");
+                col.keyword("items")?;
+                print!(" = Arrays.asList");
+                col.inner_wrapper("(")?;
                 for (i, elem) in data.iter().enumerate() {
-                    col.start_list_item();
                     print!("{}", elem.represent_java(conf));
-                    col.end_list_item();
 
                     if i != data.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!(");");
-                col.end_list();
+                col.inner_wrapper(")")?;
+                println!(";");
             },
             Output::Association { data, .. } => {
                 // TODO sort by keys
                 if data.is_empty() {
-                    println!("Map<String, String> map = new HashMap();");
+                    print!("Map<String, String> ");
+                    col.keyword("map")?;
+                    println!(" = new HashMap();");
                 } else if data.len() == 1 {
                     let key = data.values().next().unwrap();
                     let value = data.values().next().unwrap();
-                    col.start_assoc();
-                    println!("Collections.singletonMap({}, {})", key.represent_java(conf), value.represent_java(conf));
-                    col.end_assoc();
+                    print!("Collections.singletonMap");
+                    col.inner_wrapper("(")?;
+                    print!("{}", key.represent_java(conf));
+                    col.inner_separator(", ")?;
+                    print!("{}", value.represent_java(conf));
+                    col.inner_wrapper(")")?;
+                    println!("");
                 } else {
-                    col.start_assoc();
-                    println!("Map<Object, Object> ,ap = Map.ofEntries(");
+                    print!("Map<Object, Object> ");
+                    col.keyword("map")?;
+                    print!(" = Map.ofEntries");
+                    col.outer_wrapper("(")?;
+                    println!("");
                     for (key, value) in data.iter() {
-                        print!("  entry(");
-                        col.start_assoc_key();
+                        print!("  entry");
+                        col.inner_wrapper("(")?;
                         print!("{}", key.represent_java(conf));
-                        col.end_assoc_key();
-                        print!(", ");
-                        col.start_assoc_value();
+                        col.inner_separator(", ")?;
                         print!("{}", value.represent_java(conf));
-                        col.end_assoc_value();
-                        println!("),");
+                        col.inner_wrapper(")")?;
+                        println!(",");
                     }
-                    println!(");");
-                    col.end_assoc();
+                    col.outer_wrapper(")")?;
+                    println!(";");
                 }
             },
             Output::Table { data, column_headers, .. } => {
                 // generate representation
-                col.start_table();
-                col.start_table_header();
-                print!("List<String> headers = Arrays.asList(");
+                print!("List<String> ");
+                col.keyword("headers")?;
+                print!(" = Arrays.asList");
+                col.inner_wrapper("(")?;
                 for (i, description) in column_headers.iter().enumerate() {
-                    col.start_table_header_item();
                     let header = OutputValue::SingleLineText(description.to_owned());
                     print!("{}", header.represent_java(conf));
-                    col.end_table_header_item();
                     if i != column_headers.len() - 1 {
-                        print!(", ");
+                        col.inner_wrapper(", ")?;
                     }
                 }
-                println!(");");
-                col.end_table_header();
+                col.inner_wrapper(")")?;
+                println!(";");
 
                 if data.is_empty() {
-                    println!("int[][] emptyTable;");
-                    return;
+                    print!("int[][] ");
+                    col.keyword("emptyTable")?;
+                    println!(";");
+                    return Ok(());
                 }
 
-                col.start_table();
-                println!("Object[][] table = {{");
+                print!("Object[][] ");
+                col.keyword("table")?;
+                print!(" = ");
+                col.outer_wrapper("{")?;
+                println!("");
                 for (row_id, row) in data.iter().enumerate() {
-                    print!("  {{ ");
+                    print!("  ");
+                    col.inner_wrapper("{")?;
+                    print!(" ");
                     for (cell_id, cell) in row.iter().enumerate() {
                         print!("{}", cell.represent_java(conf));
                         if cell_id < row.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
                     if row_id < data.len() - 1 {
-                        println!(" }},");
+                        print!(" ");
+                        col.inner_wrapper("}")?;
+                        col.outer_separator(",")?;
                     } else {
-                        println!(" }}");
+                        print!(" ");
+                        col.inner_wrapper("}")?;
                     }
+                    println!("");
                 }
-                print!("}};");
-                col.end_table();
+                col.outer_wrapper("}")?;
+                println!(";");
             },
         }
+
+        Ok(())
     }
 
-    pub fn print_kotlin(&self, conf: &Configuration) {
+    pub fn print_kotlin(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
             Output::Scalar { data, .. } => {
-                col.start_scalar();
                 println!("{}", data.represent_kotlin(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList { data,  .. } => {
                 if data.is_empty() {
-                    println!("emptyArray()");
+                    col.keyword("emptyArray")?;
+                    println!("()");
                 } else {
-                    col.start_list();
-                    print!("arrayOf(");
+                    col.keyword("arrayOf")?;
+                    col.inner_wrapper("(")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         print!("{}", elem.represent_kotlin(conf));
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!(")");
-                    col.end_list();
+                    col.inner_wrapper(")")?;
+                    println!("");
                 }
             },
             Output::HeterogeneousList { data, .. } => {
                 if data.is_empty() {
-                    println!("emptyList()");
-                    return;
+                    col.keyword("emptyList")?;
+                    println!("()");
+                    return Ok(());
                 }
 
-                col.start_list();
-                print!("listOf(");
+                col.keyword("listOf")?;
+                col.inner_wrapper("(")?;
                 for (i, elem) in data.iter().enumerate() {
-                    col.start_list_item();
                     print!("{}", elem.represent_kotlin(conf));
-                    col.end_list_item();
 
                     if i != data.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!(")");
-                col.end_list();
+                col.inner_wrapper(")")?;
+                println!("");
             },
             Output::Association { data, .. } => {
                 // TODO sort by keys
                 if data.is_empty() {
-                    println!("emptyMap()");
-                    return;
+                    col.keyword("emptyMap")?;
+                    println!("()");
+                    return Ok(());
                 }
 
-                col.start_assoc();
-                print!("mapOf(");
+                col.keyword("mapOf")?;
+                col.inner_wrapper("(")?;
                 for (key, value) in data.iter() {
-                    col.start_assoc_key();
                     print!("{}", key.represent_kotlin(conf));
-                    col.end_assoc_key();
-                    print!(" to ");
-                    col.start_assoc_value();
+                    col.inner_separator(" to ")?;
                     print!("{}", value.represent_kotlin(conf));
-                    col.end_assoc_value();
-                    println!(",");
+                    col.outer_separator(",")?;
                 }
-                print!(")");
-                col.end_assoc();
+                col.inner_wrapper(")")?;
+                println!("");
             },
             Output::Table { data, column_headers, .. } => {
                 // generate representation
-                col.start_table();
-                col.start_table_header();
-                print!("val headers = listOf(");
+                print!("val ");
+                col.keyword("headers")?;
+                print!(" = listOf");
+                col.inner_wrapper("(")?;
                 for (i, description) in column_headers.iter().enumerate() {
-                    col.start_table_header_item();
                     let header = OutputValue::SingleLineText(description.to_owned());
                     print!("{}", header.represent_kotlin(conf));
-                    col.end_table_header_item();
                     if i != column_headers.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!(")");
-                col.end_table_header();
+                col.inner_wrapper(")")?;
+                println!("");
 
                 if data.is_empty() {
-                    println!("val table = emptyList()");
-                    return;
+                    print!("val ");
+                    col.keyword("table")?;
+                    println!(" = emptyList()");
+                    return Ok(());
                 }
 
-                col.start_table();
-                println!("val table = listOf(");
+                print!("val ");
+                col.keyword("table")?;
+                print!(" = listOf");
+                col.outer_wrapper("(")?;
+                println!("");
                 for (row_id, row) in data.iter().enumerate() {
-                    print!("  listOf(");
+                    print!("  listOf");
+                    col.inner_wrapper("(")?;
                     for (cell_id, cell) in row.iter().enumerate() {
                         print!("{}", cell.represent_kotlin(conf));
                         if cell_id < row.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
                     if row_id < data.len() - 1 {
-                        println!("),");
+                        col.inner_wrapper(")")?;
+                        println!(",");
                     } else {
-                        println!(")");
+                        col.inner_wrapper(")")?;
+                        println!("");
                     }
                 }
-                print!(");");
-                col.end_table();
+                col.outer_wrapper(")")?;
+                println!(";");
             },
         }
+
+        Ok(())
     }
 
-    pub fn print_python(&self, conf: &Configuration) {
+    pub fn print_python(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
             Output::Scalar { data, .. } => {
-                col.start_scalar();
                 println!("{}", data.represent_python(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList{ data: list, .. } |
             Output::HeterogeneousList{ data: list, .. } => {
-                col.start_list();
-                print!("[");
+                col.inner_wrapper("[")?;
                 for (i, elem) in list.iter().enumerate() {
-                    col.start_list_item();
                     print!("{}", elem.represent_python(conf));
-                    col.end_list_item();
 
                     if i != list.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                print!("]");
-                col.end_list();
+                col.inner_wrapper("]")?;
+                println!("");
             },
             Output::Association { data, .. } => {
                 // TODO sort by keys
-                col.start_assoc();
-                print!("{{");
+                col.outer_wrapper("{")?;
                 for (i, (key, value)) in data.iter().enumerate() {
-                    col.start_assoc_key();
                     print!("{}", key.represent_python(conf));
-                    col.end_assoc_key();
 
-                    print!(": ");
+                    col.inner_separator(": ")?;
 
-                    col.start_assoc_value();
                     print!("{}", value.represent_python(conf));
-                    col.end_assoc_value();
 
                     if i != data.len() - 1 {
-                        print!(", ");
+                        col.outer_separator(", ")?;
                     }
                 }
-                print!("}}");
-                col.end_assoc();
+                col.outer_wrapper("}")?;
+                println!("");
             },
             Output::Table { data, column_headers, .. } => {
                 // compute column widths
@@ -1187,39 +1211,39 @@ impl Output {
                 }
 
                 // generate representation
-                col.start_table();
-                print!("[");
-                col.start_table_header();
-                print!("[");
+                col.outer_wrapper("[")?;
+                col.inner_wrapper("[")?;
                 for (description, width) in column_headers.iter().zip(&column_widths) {
-                    col.start_table_header_item();
                     let header = OutputValue::SingleLineText(format!("{:─^width$}", description, width=*width));
-                    print!("{}, ", header.represent_python(conf));
-                    col.end_table_header_item();
+                    print!("{}", header.represent_python(conf));
+                    col.inner_wrapper(", ")?;
                 }
-                println!("]");
-                col.end_table_header();
-                println!(",");
+                col.inner_wrapper("]")?;
+                col.outer_separator(",")?;
+                println!("");
 
-                for row in data.iter() {
-                    print!(" [");
+                for (i, row) in data.iter().enumerate() {
+                    col.inner_wrapper(" [")?;
                     for (i, (cell, width)) in row.iter().zip(&column_widths).enumerate() {
-                        col.start_table_cell();
                         print!("{:─^width$}", cell.represent_python(conf), width=*width);
-                        col.end_table_cell();
                         if i != row.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("]");
+                    col.inner_wrapper("]")?;
+                    if i != data.len() - 1 {
+                        col.outer_separator(",")?;
+                    }
                 }
-                print!("]");
-                col.end_table();
+                col.outer_wrapper("]")?;
+                println!("");
             },
         }
+
+        Ok(())
     }
 
-    pub fn print_rust(&self, conf: &Configuration) {
+    pub fn print_rust(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
         let repr_val = |val: &OutputValue| {
             match val {
@@ -1231,145 +1255,167 @@ impl Output {
             }
         };
 
+        let val_declaration = || -> Err {
+            println!("#[derive(Clone, Debug, Hash, PartialEq)]");
+            print!("enum ");
+            col.keyword("Val")?;
+            println!(" {{");
+
+            print!("  ");
+            col.keyword("Bool")?;
+            println!("(bool),");
+
+            print!("  ");
+            col.keyword("Byte")?;
+            println!("(u8),");
+
+            print!("  ");
+            col.keyword("Int")?;
+            println!("(i64),");
+
+            print!("  ");
+            col.keyword("OneLineString")?;
+            println!("(String),");
+
+            print!("  ");
+            col.keyword("MultiLineString")?;
+            println!("(String),");
+            println!("}}");
+
+            Ok(())
+        };
+
         match self {
             Output::Scalar { data, .. } => {
-                col.start_scalar();
                 println!("{}", data.represent_rust(conf));
-                col.end_scalar();
             },
             Output::HomogeneousList { data,  .. } => {
                 if data.is_empty() {
-                    col.start_list();
-                    println!("let mut list: [i32; 0];");
-                    col.end_list();
+                    print!("let mut ");
+                    col.keyword("list")?;
+                    println!(": [i32; 0];");
                 } else {
-                    col.start_list();
-                    print!("let mut array: [{}; {}] = [", data[0].typename(conf), data.len());
+                    print!("let mut ");
+                    col.keyword("array")?;
+                    print!(": [");
+                    col.keyword(data[0].typename(conf))?;
+                    print!("; ");
+                    col.keyword(&format!("{}", data.len()))?;
+                    print!("] = ");
+                    col.inner_wrapper("[")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         print!("{}", elem.represent_rust(conf));
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("];");
-                    col.end_list();
+                    col.inner_wrapper("]")?;
+                    println!(";");
                 }
             },
             Output::HeterogeneousList { data, .. } => {
                 if data.is_empty() {
-                    col.start_list();
-                    println!("let mut list: [i32; 0];");
-                    col.end_list();
+                    print!("let mut ");
+                    col.keyword("list")?;
+                    println!(": [i32; 0];");
 
                 } else {
-                    println!("#[derive(Clone, Debug, Hash, PartialEq)]");
-                    println!("enum Val {{");
-                    println!("  Bool(bool),");
-                    println!("  Byte(u8),");
-                    println!("  Int(i64),");
-                    println!("  OneLineString(String),");
-                    println!("  MultiLineString(String),");
-                    println!("}}");
+                    val_declaration()?;
 
-                    col.start_list();
-                    print!("let list: [Val; {}] = [", data.len());
+                    print!("let ");
+                    col.keyword("list")?;
+                    print!(": [Val; {}] = ", data.len());
+                    col.inner_wrapper("[")?;
                     for (i, elem) in data.iter().enumerate() {
-                        col.start_list_item();
                         repr_val(elem);
-                        col.end_list_item();
 
                         if i != data.len() - 1 {
-                            print!(", ");
+                            col.inner_separator(", ")?;
                         }
                     }
-                    println!("];");
-                    col.end_list();
+                    col.inner_wrapper("]")?;
+                    println!(";");
                 }
             },
             Output::Association { data, .. } => {
                 // TODO sort by keys
-                eprintln!("NOTE: heterogeneous maps cannot be handled in this syntax");
+                col.note_label("NOTE")?;
+                println!(": heterogeneous maps cannot be handled in this syntax");
 
                 if data.is_empty() {
-                    col.start_assoc();
-                    println!("let mut map: HashMap<String, String> = HashMap::new();");
-                    col.end_assoc();
+                    print!("let mut ");
+                    col.keyword("map")?;
+                    println!(": HashMap<String, String> = HashMap::new();");
 
                 } else {
-                    println!("#[derive(Clone, Debug, Hash, PartialEq)]");
-                    println!("enum Val {{");
-                    println!("  Bool(bool),");
-                    println!("  Byte(u8),");
-                    println!("  Int(i64),");
-                    println!("  OneLineString(String),");
-                    println!("  MultiLineString(String),");
-                    println!("}}");
+                    val_declaration()?;
 
-                    col.start_assoc();
-                    println!("let mut map: HashMap<Val, Val> = HashMap::new();");
+                    print!("let mut ");
+                    col.keyword("map")?;
+                    println!(": HashMap<Val, Val> = HashMap::new();");
                     for (key, value) in data.iter() {
-                        print!("map.insert(");
-                        col.start_assoc_key();
+                        print!("map.insert");
+                        col.inner_wrapper("(")?;
                         repr_val(key);
-                        col.end_assoc_key();
-                        print!(", ");
-                        col.start_assoc_value();
+                        col.inner_separator(", ")?;
                         repr_val(value);
-                        col.start_assoc_value();
-                        println!(");");
+                        col.inner_wrapper(")")?;
+                        println!(";");
                     }
-                    col.end_assoc();
                 }
             },
             Output::Table { data, column_headers, .. } => {
-                println!("#[derive(Clone, Debug, Hash, PartialEq)]");
-                println!("enum Val {{");
-                println!("  Bool(bool),");
-                println!("  Byte(u8),");
-                println!("  Int(i64),");
-                println!("  OneLineString(String),");
-                println!("  MultiLineString(String),");
-                println!("}}");
+                val_declaration()?;
 
                 // generate representation
-                col.start_table();
-                col.start_table_header();
-                print!("let headers[&'static str; {}] = [", column_headers.len());
+                print!("let ");
+                col.keyword("headers")?;
+                print!("[&'static str; {}] = ", column_headers.len());
+                col.inner_wrapper("[")?;
                 for (i, description) in column_headers.iter().enumerate() {
-                    col.start_table_header_item();
                     let header = OutputValue::SingleLineText(description.to_owned());
                     print!("{}", header.represent_rust(conf));
-                    col.end_table_header_item();
                     if i != column_headers.len() - 1 {
-                        print!(", ");
+                        col.inner_separator(", ")?;
                     }
                 }
-                println!("];");
-                col.end_table_header();
+                col.inner_wrapper("]")?;
+                println!(";");
 
                 if data.is_empty() {
-                    println!("let table = vec![];");
+                    print!("let ");
+                    col.keyword("table")?;
+                    println!(" = vec![];");
 
                 } else {
-                    col.start_table();
-                    println!("let table: Vec<Vec<Val>> = vec![");
-                    for row in data.iter() {
-                        print!("  vec![");
-                        for cell in row.iter() {
-                            col.start_table_cell();
+                    print!("let ");
+                    col.keyword("table")?;
+                    println!(": Vec<Vec<Val>> = vec!");
+                    col.outer_wrapper("[")?;
+                    println!("");
+                    for (i, row) in data.iter().enumerate() {
+                        print!("  vec!");
+                        col.inner_wrapper("[")?;
+                        for (j, cell) in row.iter().enumerate() {
                             print!("{}", cell.represent_rust(conf));
-                            col.end_table_cell();
+                            if j != row.len() - 1 {
+                                col.inner_separator(", ")?;
+                            }
                         }
-                        println!("]");
+                        col.inner_wrapper("]")?;
+                        if i != data.len() - 1 {
+                            col.outer_separator(",")?;
+                        }
+                        println!("");
                     }
-                    println!("];");
-                    col.end_table();
+                    col.outer_wrapper("]")?;
+                    println!(";");
                 }
             },
         }
+
+        Ok(())
     }
 }
 
@@ -1418,204 +1464,3 @@ impl From<&str> for Output {
         }
     }
 }
-
-
-/*
-pub struct Results {
-    config: repr::CLIConfig,
-    generic: Vec<repr::Response>, // ops_utf8.rs
-    charsets: Vec<repr::Response>, // ops_charsets.rs
-    stats: Vec<repr::Response>, // ops_stats.rs
-    unicode: Vec<repr::Response>, // ops_unicode.rs
-    locale: Vec<repr::Response>, // ops_locale.rs
-    xml: Vec<repr::Response>, // ops_xml.rs
-}
-
-// TODO sort vec<repr::Response> based on the length of its CLI representation
-
-impl default::Default for Results {
-    fn default() -> Self {
-        Results {
-            config: repr::CLIConfig::default(),
-            generic: vec![],
-            charsets: vec![],
-            stats: vec![],
-            unicode: vec![],
-            locale: vec![],
-            xml: vec![],
-        }
-    }
-}
-
-impl Results {
-    pub fn add_line(&mut self, section: &str, line: String) -> &mut Self {
-        let line_repr = if line.len() < 80 {
-            repr::Response::ShortSingleLine(line)
-        } else {
-            repr::Response::LongSingleLine(line)
-        };
-        match section {
-            "generic" => self.generic.push(line_repr),
-            "charsets" => self.charsets.push(line_repr),
-            "stats" => self.stats.push(line_repr),
-            "unicode" => self.unicode.push(line_repr),
-            "locale" => self.locale.push(line_repr),
-            "xml" => self.xml.push(line_repr),
-            _ => panic!("programming error: unknown section '{}'", section),
-        };
-
-        self
-    }
-}
-
-impl fmt::Display for Results {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if !self.generic.is_empty() {
-            for item in &self.generic {
-                writeln!(f, "• {}", item.to_str(&self.config, 0))?;
-            }
-        }
-
-        if !self.charsets.is_empty() {
-            writeln!(f, "## text encoding", )?;
-            writeln!(f, "")?;
-            for item in &self.charsets {
-                writeln!(f, "• {}", item.to_str(&self.config, 0))?;
-            }
-        }
-
-        if !self.stats.is_empty() {
-            writeln!(f, "## statistics", )?;
-            writeln!(f, "")?;
-            for item in &self.stats {
-                writeln!(f, "• {}", item.to_str(&self.config, 0))?;
-            }
-        }
-
-        if !self.unicode.is_empty() {
-            writeln!(f, "## Unicode", )?;
-            writeln!(f, "")?;
-            for item in &self.unicode {
-                writeln!(f, "• {}", item.to_str(&self.config, 0))?;
-            }
-        }
-
-        if !self.locale.is_empty() {
-            writeln!(f, "## locale", )?;
-            writeln!(f, "")?;
-            for item in &self.locale {
-                writeln!(f, "• {}", item.to_str(&self.config, 0))?;
-            }
-        }
-
-        if !self.xml.is_empty() {
-            writeln!(f, "## XML", )?;
-            writeln!(f, "")?;
-            for item in &self.xml {
-                writeln!(f, "• {}", item.to_str(&self.config, 0))?;
-            }
-        }
-
-        write!(f, "")
-    }
-}
-*/
-
-/*
-pub trait BytesRepresentations {
-    fn to_bash_repr(&self, conf: &Configuration) -> String;
-    fn to_golang_repr(&self, conf: &Configuration) -> String;
-    fn to_python_repr(&self, conf: &Configuration) -> String;
-    fn to_c_repr(&self, conf: &Configuration) -> String;
-    fn to_rust_repr(&self, conf: &Configuration) -> String;
-    fn to_hex_repr(&self, conf: &Configuration) -> String;
-    fn to_hexstring_repr(&self, conf: &Configuration) -> String;
-    fn has_byte(&self, b: u8) -> bool;
-}
-
-/// Auxiliary function taking a sequence of bytes and returning the same elements as strings
-/// according to Configuration.
-fn as_radixed_numbers(nums: &[u8], conf: &Configuration, enable_binary: bool, enable_hex: bool) -> Vec<String> {
-    let radix_to_use = match conf.radix {
-        2 => if enable_binary { 2 } else { 10 },
-        16 => if enable_hex { 16 } else { 10 },
-        _ => 10,
-    };
-    match radix_to_use {
-        2 => nums.iter().map(|i| format!("0b{:b}", i)).collect::<Vec<String>>(),
-        16 => {
-            if conf.hex_upper {
-                nums.iter().map(|i| format!("0x{:02X}", i)).collect::<Vec<String>>()
-            } else {
-                nums.iter().map(|i| format!("0x{:02x}", i)).collect::<Vec<String>>()
-            }
-        },
-        _ => nums.iter().map(|i| format!("{}", i)).collect::<Vec<String>>(),
-    }
-}
-
-impl BytesRepresentations for Vec<u8> {
-    fn to_bash_repr(&self, conf: &Configuration) -> String {
-        let mut result = "( ".to_string();
-        result.push_str(&as_radixed_numbers(&self, conf, false, true).join(" "));
-        result.push_str(" )");
-        result
-    }
-
-    fn to_golang_repr(&self, conf: &Configuration) -> String {
-        // TODO: b"…" representation for ASCII printables
-        //let utf8_str = String::from_utf8(self);
-
-        let mut result = "[".to_string();
-        result.push_str(&as_radixed_numbers(&self, conf, true, true).join(", "));
-        result.push_str("]");
-        result
-    }
-
-    fn to_python_repr(&self, conf: &Configuration) -> String {
-        let mut result = "[".to_string();
-        result.push_str(&as_radixed_numbers(&self, conf, true, true).join(", "));
-        result.push_str("]");
-        result
-    }
-
-    fn to_c_repr(&self, conf: &Configuration) -> String {
-        let mut result = "[".to_string();
-        result.push_str(&as_radixed_numbers(&self, conf, true, true).join(", "));
-        result.push_str("]");
-        result
-    }
-
-    fn to_rust_repr(&self, conf: &Configuration) -> String {
-        // TODO: "…" representation for ASCII printables
-        //let utf8_str = String::from_utf8(self);
-
-        let mut result = format!("const char str[{}] = {{", self.len());
-        result.push_str(&as_radixed_numbers(&self, conf, true, true).join(", "));
-        result.push_str("};");
-        result
-    }
-
-    fn to_hex_repr(&self, conf: &Configuration) -> String {
-        match conf.hex_upper {
-            true => hex::encode_upper(&self),
-            false => hex::encode(&self),
-        }
-    }
-
-    fn to_hexstring_repr(&self, conf: &Configuration) -> String {
-        match conf.hex_upper {
-            true => self.iter().map(|x| format!("{:02X} ", *x)).collect(),
-            false => self.iter().map(|x| format!("{:02x} ", *x)).collect(),
-        }
-    }
-
-    // TODO base64?
-
-    /// Returns whether the given byte is part of this bytes.
-    /// Might be interesting e.g. for the NULL byte.
-    fn has_byte(&self, b: u8) -> bool {
-        self.contains(&b)
-    }
-}
-*/

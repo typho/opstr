@@ -279,7 +279,7 @@ fn run_op_by_name(_conf: &Configuration, args: &input::StrArgs, op_name: &str) -
     Err(Errors::UnknownOp(op_name.to_owned()))
 }
 
-pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
+pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) -> Result<(), Errors> {
     // (1) determine the set of functions returning priority > 0.0
     let mut priority_per_function: Vec<(&'static str, f32)> = vec![];
 
@@ -343,7 +343,7 @@ pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
 
     // (3) invoke functions in correct order
     for (op_name, _) in priority_per_function {
-        println!("----- {op} {rep}", op=op_name, rep="-".repeat((65 - op_name.len()).max(0)));
+        conf.color_scheme.op_section(op_name)?;
         match args.len() {
             0 => {
                 for (fn_name, _, _, fn_impl) in ops::INDEX_ZERO {
@@ -353,8 +353,11 @@ pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
                     }
 
                     match fn_impl() {
-                        Ok(output) => output.print(conf),
-                        Err(e) => eprintln!("ERROR({}): {}", name, e),
+                        Ok(output) => { output.print(conf)?; },
+                        Err(e) => {
+                            conf.color_scheme.error_label("ERROR")?;
+                            eprintln!(": {}", e);
+                        },
                     }
                 }
             },
@@ -367,8 +370,11 @@ pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
 
                     let arg0: &input::StrArg = args.first().unwrap();
                     match fn_impl(arg0) {
-                        Ok(output) => output.print(conf),
-                        Err(e) => eprintln!("ERROR({}): {}", name, e),
+                        Ok(output) => { output.print(conf)?; },
+                        Err(e) => {
+                            conf.color_scheme.error_label("ERROR")?;
+                            eprintln!(": {}", e);
+                        },
                     }
                 }
             },
@@ -382,8 +388,11 @@ pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
                     let arg0: &input::StrArg = args.first().unwrap();
                     let arg1: &input::StrArg = args.get(1).unwrap();
                     match fn_impl(arg0, arg1) {
-                        Ok(output) => output.print(conf),
-                        Err(e) => eprintln!("ERROR({}): {}", name, e),
+                        Ok(output) => { output.print(conf)?; },
+                        Err(e) => {
+                            conf.color_scheme.error_label("ERROR")?;
+                            eprintln!(": {}", e);
+                        },
                     }
                 }
             },
@@ -398,8 +407,11 @@ pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
                     let arg1: &input::StrArg = args.get(1).unwrap();
                     let arg2: &input::StrArg = args.get(2).unwrap();
                     match fn_impl(arg0, arg1, arg2) {
-                        Ok(output) => output.print(conf),
-                        Err(e) => eprintln!("ERROR({}): {}", name, e),
+                        Ok(output) => { output.print(conf)?; },
+                        Err(e) => {
+                            conf.color_scheme.error_label("ERROR")?;
+                            eprintln!(": {}", e);
+                        },
                     }
                 }
             },
@@ -413,9 +425,14 @@ pub fn run_unspecified_op(conf: &Configuration, args: &input::StrArgs) {
             }
 
             match fn_impl(args) {
-                Ok(output) => output.print(conf),
-                Err(e) => eprintln!("ERROR({}): {}", name, e),
+                Ok(output) => { output.print(conf)?; },
+                Err(e) => {
+                    conf.color_scheme.error_label("ERROR")?;
+                    eprintln!(": {}", e);
+                },
             }
         }
     }
+
+    Ok(())
 }
