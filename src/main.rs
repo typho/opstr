@@ -6,10 +6,10 @@ use opstr::Errors;
 
 /// Analyze strings and apply string operations
 #[derive(Debug, Parser)]
-/*#[command(name = "opstr")]
+#[command(name = "opstr")]
 #[command(author = "tajpulo <tajpulo@typho.org>")]
-#[command(version = "0.5")]
-#[command(about = "Read document as tree and apply Lua functions to nodes")]*/
+#[command(version = "0.7")]
+#[command(about = "Operate on strings")]
 #[command(author, version, about, long_about = None, trailing_var_arg = true)]
 struct Opts {
     #[clap(short, long, help = "name of the operation to apply")]
