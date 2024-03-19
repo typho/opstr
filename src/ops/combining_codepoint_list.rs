@@ -1,6 +1,8 @@
 use crate::errors::Errors;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output, OutputValue};
+use crate::range;
 
 /*
 The following python script was used to generate the combining characters list:
@@ -18,13 +20,15 @@ for i in sorted(combining_characters_by_wikipedia):
 
 pub struct CombiningCodepointList {}
 
-impl traits::OpZero for CombiningCodepointList {
+impl traits::Op for CombiningCodepointList {
     fn name() -> &'static str { "combining-codepoint-list" }
+    fn usage() -> &'static str { "" }
     fn description() -> &'static str { "list all codepoints with a combining property" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(0, 0) }
 
-    fn priority() -> f32 { 0.01 }
+    fn priority(_args: &Args) -> Result<f32, Errors> { Ok(0.01) }
 
-    fn run() -> Result<Output, Errors> {
+    fn run(_args: &Args) -> Result<Output, Errors> {
         let s = |s: &str| { OutputValue::SingleLineText(s.to_owned()) };
         let data = vec![
             vec![s("U+0300"), s("COMBINING GRAVE ACCENT")],

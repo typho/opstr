@@ -1,42 +1,41 @@
 // use std::ascii::AsciiExt; // TODO would AsciiExt help us?
 
 use crate::errors::Errors;
-use crate::input::StrArgs;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct IsCaseinsensitivelyEqual {}
 
-impl traits::OpMulti for IsCaseinsensitivelyEqual {
+impl traits::Op for IsCaseinsensitivelyEqual {
     fn name() -> &'static str { "is-caseinsensitively-equal" }
-    fn description() -> &'static str { "do the Unicode strings have the same byte sequence after ASCII lowercasing?" }
+    fn usage() -> &'static str { "<#1 string base> [<#2 string compare> 1 or more times]" }
+    fn description() -> &'static str { "do all Unicode strings have the same byte sequence after ASCII lowercasing?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &StrArgs) -> f32 {
-        if args.len() <= 1 { return 0.0; }
-
+    fn priority(args: &Args) -> Result<f32, Errors> {
         let mut eq = true;
-        let str1: &str = (&args[0]).into();
+        let str1: &str = args.get(0)?.try_into()?;
         let s1 = str1.to_ascii_lowercase();
 
         for arg in args.iter() {
-            let s: &str = arg.into();
+            let s: &str = arg.try_into()?;
             if s.to_ascii_lowercase() != s1 {
                 eq = false;
             }
         }
 
-        if eq { 0.64 } else { 0.52 }
+        Ok(if eq { 0.64 } else { 0.52 })
     }
 
-    fn run(args: &StrArgs) -> Result<Output, Errors> {
-        if args.len() <= 1 { return Err(Errors::ArgumentCountError((2..).into(), args.len())); }
-
+    fn run(args: &Args) -> Result<Output, Errors> {
         let mut eq = true;
-        let str1: &str = (&args[0]).into();
+        let str1: &str = args.get(0)?.try_into()?;
         let s1 = str1.to_ascii_lowercase();
 
         for arg in args.iter() {
-            let s: &str = arg.into();
+            let s: &str = arg.try_into()?;
             if s.to_ascii_lowercase() != s1 {
                 eq = false;
             }

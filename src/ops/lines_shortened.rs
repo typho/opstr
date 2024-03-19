@@ -1,9 +1,10 @@
 // TODO review naming
 
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct LinesShortened {}
 
@@ -68,15 +69,17 @@ impl LinesShortened {
     }
 }
 
-impl traits::OpTwo for LinesShortened {
+impl traits::Op for LinesShortened {
     fn name() -> &'static str { "lines-shortened" }
-    fn description() -> &'static str { "shorten lines in string #1 if necessary not to exceed width in string #2" }
+    fn usage() -> &'static str { "<#1 string text> <#2 int width>" }
+    fn description() -> &'static str { "shorten lines in string #1, if necessary, not to exceed width #2" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(arg1: &StrArg, arg2: &StrArg) -> f32 {
-        let text: &str = arg1.into();
-        let w: Result<i64, Errors> = arg2.try_into();
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        let w: Result<i64, Errors> = args.get(1)?.try_into();
 
-        match w {
+        Ok(match w {
             Ok(width) => {
                 let mut all_exceed = true;
                 let mut any_exceed = false;
@@ -97,12 +100,12 @@ impl traits::OpTwo for LinesShortened {
                 }
             },
             Err(_) => 0.0,
-        }
+        })
     }
 
-    fn run(arg1: &StrArg, arg2: &StrArg) -> Result<Output, Errors> {
-        let text: &str = arg1.into();
-        let w: Result<i64, Errors> = arg2.try_into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        let w: Result<i64, Errors> = args.get(1)?.try_into();
 
         match w {
             Ok(width) => {

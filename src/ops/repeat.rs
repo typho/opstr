@@ -1,7 +1,8 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct Repeat {}
 
@@ -40,28 +41,30 @@ impl Repeat {
     }
 }
 
-impl traits::OpTwo for Repeat {
+impl traits::Op for Repeat {
     fn name() -> &'static str { "repeat" }
+    fn usage() -> &'static str { "<#1 string to-repeat> <#2 int repetitions>" }
     fn description() -> &'static str { "repeat string #1 several (integer #2) times" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(arg1: &StrArg, arg2: &StrArg) -> f32 {
-        let argument1: &str = arg1.into();
-        let argument2: &str = arg2.into();
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let argument1: &str = args.get(0)?.try_into()?;
+        let argument2: &str = args.get(1)?.try_into()?;
 
         if let Ok(count) = argument2.parse::<i64>() {
-            return Self::priority(argument1, count);
+            return Ok(Self::priority(argument1, count));
         }
 
         if let Ok(count) = argument1.parse::<i64>() {
-            return Self::priority(argument2, count);
+            return Ok(Self::priority(argument2, count));
         }
 
-        0.0
+        Ok(0.0)
     }
 
-    fn run(arg1: &StrArg, arg2: &StrArg) -> Result<Output, Errors> {
-        let argument1: &str = arg1.into();
-        let argument2: &str = arg2.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let argument1: &str = args.get(0)?.try_into()?;
+        let argument2: &str = args.get(1)?.try_into()?;
 
         if let Ok(count) = argument2.parse::<i64>() {
             return Self::implementation(argument1, count, 1);

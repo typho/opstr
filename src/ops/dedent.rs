@@ -1,7 +1,8 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct Dedent {}
 
@@ -32,25 +33,27 @@ impl Dedent {
     }
 }
 
-impl traits::OpOne for Dedent {
+impl traits::Op for Dedent {
     fn name() -> &'static str { "dedent" }
-    fn description() -> &'static str { "identify and remove common indentation among all non-empty lines" }
+    fn usage() -> &'static str { "<#1 string lines>" }
+    fn description() -> &'static str { "identify and remove common indentation among all non-empty lines of string #1" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let string: &str = arg.into();
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
         let common_prefix = Self::identify_common_prefix_on_nonempty_lines(string);
 
-        if common_prefix.is_empty() {
+        Ok(if common_prefix.is_empty() {
             0.0
         } else if string.lines().count() > 4 {
             0.72
         } else {
             0.3
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let string: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
         let common_prefix = Self::identify_common_prefix_on_nonempty_lines(string);
 
         let terminator = if string.contains("\r\n") { "\r\n" } else { "\n" };

@@ -1,38 +1,37 @@
 use crate::errors::Errors;
-use crate::input::StrArgs;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct IsEqual {}
 
-impl traits::OpMulti for IsEqual {
+impl traits::Op for IsEqual {
     fn name() -> &'static str { "is-equal" }
-    fn description() -> &'static str { "do the Unicode strings have the same byte sequence?" }
+    fn usage() -> &'static str { "<#1 string base> [<#2 string compare> 1 or more times]" }
+    fn description() -> &'static str { "do all Unicode strings have the same byte sequence?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &StrArgs) -> f32 {
-        if args.len() <= 1 { return 0.0; }
-
+    fn priority(args: &Args) -> Result<f32, Errors> {
         let mut eq = true;
-        let s1: &str = (&args[0]).into();
+        let s1: &str = args.get(0)?.try_into()?;
 
         for arg in args.iter() {
-            let s: &str = arg.into();
+            let s: &str = arg.try_into()?;
             if s != s1 {
                 eq = false;
             }
         }
 
-        if eq { 0.64 } else { 0.52 }
+        Ok(if eq { 0.64 } else { 0.52 })
     }
 
-    fn run(args: &StrArgs) -> Result<Output, Errors> {
-        if args.len() <= 1 { return Err(Errors::ArgumentCountError((2..).into(), args.len())); }
-
+    fn run(args: &Args) -> Result<Output, Errors> {
         let mut eq = true;
-        let s1: &str = (&args[0]).into();
+        let s1: &str = args.get(0)?.try_into()?;
 
         for arg in args.iter() {
-            let s: &str = arg.into();
+            let s: &str = arg.try_into()?;
             if s != s1 {
                 eq = false;
             }

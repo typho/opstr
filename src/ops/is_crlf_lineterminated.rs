@@ -1,27 +1,30 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct IsCRLFLineTerminated {}
 
-impl traits::OpOne for IsCRLFLineTerminated {
+impl traits::Op for IsCRLFLineTerminated {
     fn name() -> &'static str { "is-lf-lineterminated" }
+    fn usage() -> &'static str { "<#1 string lines>" }
     fn description() -> &'static str { "is (U+000D CARRIAGE RETURN)(U+000A LINE FEED) the only sequence causing line breaks in string #1?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let string: &str = arg.into();
-        if string.lines().count() > 1 {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
+        Ok(if string.lines().count() > 1 {
             0.11
         } else {
             0.07
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, Errors> {
         // c.f. UAX #14 and is-lf-lineterminated
 
-        let string: &str = arg.into();
+        let string: &str = args.get(0)?.try_into()?;
         for chr in "\u{000B}\u{000C}\u{2028}\u{2029}\u{0085}".chars() {
             if string.find(chr).is_some() {
                 return Ok(false.into());

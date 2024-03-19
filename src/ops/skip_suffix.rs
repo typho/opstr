@@ -1,27 +1,30 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct SkipSuffix {}
 
-impl traits::OpTwo for SkipSuffix {
+impl traits::Op for SkipSuffix {
     fn name() -> &'static str { "skip-suffix" }
+    fn usage() -> &'static str { "<#1 string base> <#2 string suffix>" }
     fn description() -> &'static str { "remove string #2 from the end of string #1 if it exists" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(arg1: &StrArg, arg2: &StrArg) -> f32 {
-        let s1: &str = arg1.into();
-        let s2: &str = arg2.into();
-        if s1.ends_with(s2) {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let s1: &str = args.get(0)?.try_into()?;
+        let s2: &str = args.get(1)?.try_into()?;
+        Ok(if s1.ends_with(s2) {
             0.636
         } else {
             0.546
-        }
+        })
     }
 
-    fn run(arg1: &StrArg, arg2: &StrArg) -> Result<Output, Errors> {
-        let s1: &str = arg1.into();
-        let s2: &str = arg2.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let s1: &str = args.get(0)?.try_into()?;
+        let s2: &str = args.get(1)?.try_into()?;
         if s1.ends_with(s2) {
             match s1.get(..(s1.len() - s2.len())) {
                 Some(sub) => Ok(sub.into()),

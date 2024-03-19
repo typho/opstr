@@ -1,7 +1,8 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 use std::cmp;
 
@@ -41,17 +42,19 @@ fn levenshtein_d1stance<T>(s1: &T, s2: &T) -> usize where T: ToString {
     column[v1len]
 }
 
-impl traits::OpTwo for LevenstheinDistance {
+impl traits::Op for LevenstheinDistance {
     fn name() -> &'static str { "levensthein-distance" }
-    fn description() -> &'static str { "levensthein distance between #1 and #2" }
+    fn usage() -> &'static str { "<#1 string base> <#2 string to-compare>" }
+    fn description() -> &'static str { "levensthein distance between strings #1 and #2" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(arg1: &StrArg, arg2: &StrArg) -> f32 {
-        0.473
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        Ok(0.473)
     }
 
-    fn run(arg1: &StrArg, arg2: &StrArg) -> Result<Output, Errors> {
-        let s1: &str = arg1.into();
-        let s2: &str = arg2.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let s1: &str = args.get(0)?.try_into()?;
+        let s2: &str = args.get(1)?.try_into()?;
 
         let dist: usize = levenshtein_d1stance(&s1, &s2);
         Ok((dist as i64).into())

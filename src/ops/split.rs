@@ -1,31 +1,35 @@
 use crate::errors::Errors;
-use crate::input::StrArgs;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output, OutputValue};
+use crate::range;
 
 pub struct Split {}
 
-impl traits::OpMulti for Split {
+impl traits::Op for Split {
     fn name() -> &'static str { "split" }
+    fn usage() -> &'static str { "<#1 string to-split> [<#2 string separator> one or more times]" }
     fn description() -> &'static str { "split string #1 by any of the provided substrings #2, or #3, or …" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &StrArgs) -> f32 {
-        if args.len() < 2 {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        Ok(if args.len() < 2 {
             0.0
         } else if 2 <= args.len() && args.len() <= 5 {
             0.45
         } else {
             0.37
-        }
+        })
     }
 
-    fn run(args: &StrArgs) -> Result<Output, Errors> {
-        if args.len() < 2 {
-            return Err(Errors::ArgumentCountError((2..).into(), args.len()));
-        }
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
 
-        let string: &str = (&args[0]).into();
-        let seps = args[1..].iter().map(|s| s.into()).collect::<Vec<&str>>();
+        let mut seps = vec![];
+        for arg in args.iter() {
+            let s: &str = arg.try_into()?;
+            seps.push(s);
+        }
 
         if seps.iter().all(|sep| sep.chars().count() == 1) {
             // all arguments are one code point? Common and simple to implement.
@@ -46,7 +50,7 @@ impl traits::OpMulti for Split {
 
                 // apply str.find(substr) and determine the smallest non-None index → found_index
                 for arg in args.iter().skip(1) {
-                    let substring: &str = arg.into();
+                    let substring: &str = arg.try_into()?;
                     match string[current_index..].find(substring) {
                         Some(index) => {
                             let candidate_pre_index = current_index + index;

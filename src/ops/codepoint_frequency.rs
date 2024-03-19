@@ -1,28 +1,32 @@
+use crate::auxiliary;
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output, OutputValue};
-use crate::auxiliary;
+use crate::range;
+
 use std::cmp::Ordering;
 use std::collections;
 
 pub struct CodepointFrequency {}
 
-impl traits::OpOne for CodepointFrequency {
+impl traits::Op for CodepointFrequency {
     fn name() -> &'static str { "codepoint-frequency" }
-    fn description() -> &'static str { "return the frequency analysis per codepoint" }
+    fn usage() -> &'static str { "<#1 string to-analyze-statistically>" }
+    fn description() -> &'static str { "return the frequency analysis per codepoint of string #1" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let string: &str = arg.into();
-        if 10 <= string.len() && string.len() <= 50 {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
+        Ok(if 10 <= string.len() && string.len() <= 50 {
             0.67
         } else {
             0.51
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let string: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
         let codepoint_names = auxiliary::unicode_codepoint_names_lookup(&string.chars().collect::<Vec<char>>());
         let total_count = string.chars().count();
         let mut frequency: collections::HashMap<char, (usize, &'static str)> = collections::HashMap::new();

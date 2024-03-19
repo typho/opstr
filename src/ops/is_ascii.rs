@@ -1,24 +1,28 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct IsAscii {}
 
-impl traits::OpOne for IsAscii {
+impl traits::Op for IsAscii {
     fn name() -> &'static str { "is-ascii" }
-    fn description() -> &'static str { "does this string only contain ASCII characters?" }
+    fn usage() -> &'static str { "<#1 string to-analyze>" }
+    fn description() -> &'static str { "does this string #1 only contain ASCII characters?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        if <&StrArg as Into<&str>>::into(arg).is_ascii() {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let s: &str = args.get(0)?.try_into()?;
+        Ok(if s.is_ascii() {
             0.476
         } else {
             0.312
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let s: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let s: &str = args.get(0)?.try_into()?;
         Ok(s.is_ascii().into())
     }
 }

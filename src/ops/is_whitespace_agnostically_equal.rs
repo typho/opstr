@@ -1,7 +1,8 @@
 use crate::errors::Errors;
-use crate::input::StrArgs;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct IsWhitespaceAgnosticallyEqual {}
 
@@ -14,32 +15,33 @@ impl IsWhitespaceAgnosticallyEqual {
         out
     }
 
-    fn function_for_strargs(args: &StrArgs) -> bool {
+    fn function_for_args(args: &Args) -> Result<bool, Errors> {
         let mut eq = true;
-        let s1: String = Self::without_whitespaces((&args[0]).into());
+        let s1: String = Self::without_whitespaces(args.get(0)?.try_into()?).into();
 
         for arg in args.iter() {
-            let s: String = Self::without_whitespaces(arg.into());
+            let s: String = Self::without_whitespaces(arg.try_into()?);
             if s != s1 {
                 eq = false;
             }
         }
 
-        eq
+        Ok(eq)
     }
 }
 
-impl traits::OpMulti for IsWhitespaceAgnosticallyEqual {
+impl traits::Op for IsWhitespaceAgnosticallyEqual {
     fn name() -> &'static str { "is-whitespace-agnostically-equal" }
-    fn description() -> &'static str { "are the strings equal if we ignore any whitespace characters?" }
+    fn usage() -> &'static str { "<#1 string base> [<#2 string compare> 1 or more times]" }
+    fn description() -> &'static str { "are all strings equal if we ignore any whitespace characters?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &StrArgs) -> f32 {
-        if args.len() <= 1 { return 0.0; }
-        if Self::function_for_strargs(args) { 0.41 } else { 0.25 }
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        if args.len() <= 1 { return Ok(0.0); }
+        Ok(if Self::function_for_args(args)? { 0.41 } else { 0.25 })
     }
 
-    fn run(args: &StrArgs) -> Result<Output, Errors> {
-        if args.len() <= 1 { return Err(Errors::ArgumentCountError((2..).into(), args.len())); }
-        Ok(Self::function_for_strargs(args).into())
+    fn run(args: &Args) -> Result<Output, Errors> {
+        Ok(Self::function_for_args(args)?.into())
     }
 }

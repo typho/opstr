@@ -1,18 +1,21 @@
 use crate::auxiliary;
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output,OutputValue};
+use crate::range;
 
 pub struct CodepointNames {}
 
-impl traits::OpOne for CodepointNames {
+impl traits::Op for CodepointNames {
     fn name() -> &'static str { "codepoint-names" }
+    fn usage() -> &'static str { "<#1 string to-decompose-and-represent>" }
     fn description() -> &'static str { "look up the Unicode name (or 'unknown-name' if unknown) of each codepoint of string #1, e.g. [“LATIN SMALL LETTER H”, “LATIN SMALL LETTER DOTLESS ”]" }
-    fn priority(_arg: &StrArg) -> f32 { 0.39 }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
+    fn priority(_args: &Args) -> Result<f32, Errors> { Ok(0.39) }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let string: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
         let mut unknowns = 0;
         let mut data = vec![];
 

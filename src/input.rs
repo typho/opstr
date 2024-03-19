@@ -4,78 +4,97 @@
 //! string or byteslice. However, additional conversions
 //! should syntactically make handling input arguments simpler.
 
+use std::slice;
 use crate::errors;
 
-/// A simple string according to Unicode as argument.
-/// The second element specifies the position of the argument on the CLI.
+/// An argument for an operation.
 #[derive(Clone, Debug, Hash, PartialEq)]
-pub struct StrArg(String, usize);
-
-impl StrArg {
-    pub fn new(arg: &str, arg_id: usize) -> Self {
-        Self( arg.to_owned(), arg_id )
-    }
+pub enum Arg {
+    /// A sequence of Unicode codepoints (acc. to Unicode) and the index of this argument.
+    Chars(String, usize),
+    /// A sequence of bytes (only recommended for non-Unicode content) and the index of this argument.
+    /// TODO: bytes support is currently not implemented
+    Bytes(Vec<u8>, usize),
 }
 
-impl Eq for StrArg {}
+impl Arg {
+    pub fn from_str(arg: &str, arg_id: usize) -> Self {
+        Self::Chars( arg.to_owned(), arg_id )
+    }
 
-impl TryFrom<StrArg> for i64 {
-    type Error = errors::Errors;
+    pub fn from_bytes(arg: &[u8], arg_id: usize) -> Self {
+        Self::Bytes( arg.to_owned(), arg_id )
+    }
 
-    fn try_from(value: StrArg) -> Result<Self, Self::Error> {
-        match value.0.parse::<Self>() {
-            Ok(int) => Ok(int),
-            Err(_) => Err(errors::Errors::ArgValueError(value.1, format!("cannot be converted into an integer: '{}'", value.0))),
+    /// Return the string of this argument or panic
+    pub fn str_or_panic(&self) -> &str {
+        match self {
+            Arg::Chars(s, _) => s,
+            Arg::Bytes(_, idx) => panic!("argument #{} cannot be converted into a string", idx),
         }
     }
 }
 
-impl From<StrArg> for String {
-    fn from(value: StrArg) -> Self {
-        value.0.to_owned()
-    }
-}
+impl Eq for Arg {}
 
-// same conversion trait implementations for &StrArg
-
-impl TryFrom<&StrArg> for i64 {
+impl TryFrom<&Arg> for i64 {
     type Error = errors::Errors;
 
-    fn try_from(value: &StrArg) -> Result<Self, Self::Error> {
-        match value.0.parse::<i64>() {
-            Ok(int) => Ok(int),
-            Err(_) => Err(errors::Errors::ArgValueError(value.1, format!("cannot be converted into an integer: '{}'", value.0))),
+    fn try_from(value: &Arg) -> Result<Self, Self::Error> {
+        match value {
+            Arg::Chars(s, idx) => {
+                match s.parse::<i64>() {
+                    Ok(int) => Ok(int),
+                    Err(_) => Err(errors::Errors::ArgValueError(*idx, format!("cannot be converted into an integer: '{}'", s))),
+                }
+            },
+            Arg::Bytes(_, idx) => Err(errors::Errors::ArgTypeError(*idx, "this argument cannot be converted into an integer".to_owned())),
         }
     }
 }
 
-impl<'s> From<&StrArg> for String {
-    fn from(value: &StrArg) -> Self {
-        value.0.to_owned()
-    }
-}
+impl<'s> TryFrom<&'s Arg> for &'s str {
+    type Error = errors::Errors;
 
-impl<'s> From<&'s StrArg> for &'s str {
-    fn from(value: &'s StrArg) -> Self {
-        &value.0
-    }
-}
-
-impl<'s> From<&'s StrArg> for &'s String {
-    fn from(value: &'s StrArg) -> Self {
-        &value.0
+    fn try_from(value: &'s Arg) -> Result<Self, Self::Error> {
+        match value {
+            Arg::Chars(s, idx) => Ok(s),
+            Arg::Bytes(_, idx) => Err(errors::Errors::ArgTypeError(*idx, "this argument cannot be converted into a string".to_owned())),
+        }
     }
 }
 
 
+pub struct Args {
+    args: Vec<Arg>,
+}
 
-/// A sequence of string (acc. to Unicode) arguments
-pub(crate) type StrArgs = [StrArg];
+impl Args {
+    pub fn from(arguments: &[Arg]) -> Args {
+        Args { args: arguments.to_vec() }
+    }
 
-/// A sequence of bytes considered as input argument
-/// (recommended for some operations where the input
-/// does not follow the rules of Unicode)
-pub struct BytesArg(Vec<u8>);
+    /// Return number of arguments
+    pub fn len(&self) -> usize {
+        self.args.len()
+    }
 
-/// A sequence of byte slice arguments
-pub(crate) type BytesArgs<'s> = &'s [BytesArg];
+    pub fn get(&self, index: usize) -> Result<&Arg, errors::Errors> {
+        match self.args.get(index) {
+            Some(arg) => Ok(arg),
+            None => Err(errors::Errors::IOError(format!("argument {} does not exist", index))),
+        }
+    }
+
+    pub fn get_or_default<'s, 'd: 's>(&'s self, index: usize, default: &'d Arg) -> &Arg {
+        match self.args.get(index) {
+            Some(arg) => arg,
+            None => default,
+        }
+    }
+
+    pub fn iter<'s>(&'s self) -> slice::Iter<'s, Arg> {
+        self.args.iter()
+    }
+}
+

@@ -2,9 +2,10 @@ use std::iter;
 use std::str;
 
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 /// LinebreakOpportunities iterates over line breaking opportunities
 /// in a text. Thus, they emit a tuple (UTF-8 byte offset in the text,
@@ -150,29 +151,32 @@ impl LinebreakBefore {
     } 
 }
 
-impl traits::OpTwo for LinebreakBefore {
+impl traits::Op for LinebreakBefore {
     fn name() -> &'static str { "linebreak-before" }
-    fn description() -> &'static str { "linebreak long lines in argument #1 before they reach argument #2 codepoints" }
+    fn usage() -> &'static str { "<#1 string text> <#2 int width>" }
+    fn description() -> &'static str { "linebreak long lines in (text #1) before they reach (integer #2) codepoints" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(arg1: &StrArg, arg2: &StrArg) -> f32 {
-        let text: &str = arg1.into();
-        let width: i64 = match arg2.try_into() {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        let width: i64 = match args.get(1)?.try_into() {
             Ok(int) => int,
-            Err(_) => return 0.0,
+            Err(_) => return Ok(0.0),
         };
 
         let lp = text.lines().count().saturating_div(3);
         let lines_prio = lp as f32 / (lp as f32 + 1.);
-        (if 10 <= width && width < 200 {
+        Ok(if 10 <= width && width < 200 {
             0.73
         } else {
             0.34
-        }) * lines_prio
+        } * lines_prio)
     }
 
-    fn run(arg1: &StrArg, arg2: &StrArg) -> Result<Output, Errors> {
-        let text: &str = arg1.into();
-        let width: i64 = arg2.try_into()?;
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        let width: i64 = args.get(1)?.try_into()?;
+
         let line_joiner = "\n";
         let force_if_no_opportunity = true;
 

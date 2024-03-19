@@ -1,17 +1,20 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct CountCodepoints {}
 
-impl traits::OpOne for CountCodepoints {
+impl traits::Op for CountCodepoints {
     fn name() -> &'static str { "count-codepoints" }
-    fn description() -> &'static str { "return the number of Unicode scalars in this Unicode string" }
-    fn priority(_arg: &StrArg) -> f32 { 0.67 }
+    fn usage() -> &'static str { "<#1 string to-analyze>" }
+    fn description() -> &'static str { "return the number of Unicode scalars in the Unicode string #1" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
+    fn priority(_args: &Args) -> Result<f32, Errors> { Ok(0.67) }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let s: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let s: &str = args.get(0)?.try_into()?;
         Ok(s.chars().count().into())
     }
 }

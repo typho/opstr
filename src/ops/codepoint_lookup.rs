@@ -1,18 +1,21 @@
 use crate::auxiliary;
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output,OutputValue};
+use crate::range;
 
 pub struct CodepointLookup {}
 
-impl traits::OpOne for CodepointLookup {
+impl traits::Op for CodepointLookup {
     fn name() -> &'static str { "codepoint-lookup" }
+    fn usage() -> &'static str { "<#1 string unicode-codepoint-name>" }
     fn description() -> &'static str { "given the Unicode name as string #1 (e.g. “LATIN SMALL LETTER A”), return its UTF-8 representation (or an empty string, if unknown)" }
-    fn priority(_arg: &StrArg) -> f32 { 0.26 }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
+    fn priority(_args: &Args) -> Result<f32, Errors> { Ok(0.26) }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let string: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
         let name = string.trim();
         let character = auxiliary::unicode_name_to_codepoint(name);
 

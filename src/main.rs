@@ -1,4 +1,5 @@
 use clap::Parser;
+use opstr::Args;
 use std::ffi::OsString;
 use std::process;
 use opstr::Configuration;
@@ -37,15 +38,17 @@ struct Opts {
 fn main() -> Result<(), Errors> {
     // (1) Prepare configuration
     let opts = Opts::parse();
-    let mut args = vec![];
+    let mut arguments = vec![];
 
     // TODO accept "-" as stdin
 
     for (i, arg) in opts.args.iter().enumerate() {
         if let Some(utf8_string) = arg.to_str() {
-            args.push(opstr::StrArg::new( utf8_string, i ));
+            arguments.push(opstr::Arg::from_str(utf8_string, i));
         }
     }
+
+    let args = Args::from(&arguments);
 
     let mut conf = Configuration::default();
     conf.overwrite_with_env()?;
@@ -53,8 +56,8 @@ fn main() -> Result<(), Errors> {
 
     if opts.list_ops {
         // list all operations
-        opstr::list_ops(&conf, &args).print(&conf)?;
-
+        opstr::list_all_ops(&conf).print(&conf)?
+        
     } else if let Some(op_name) = opts.op {
         // apply the mentioned operation
         match opstr::run_op(&conf, &args, &op_name) {

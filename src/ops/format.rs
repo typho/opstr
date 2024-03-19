@@ -1,9 +1,12 @@
 use std::fmt;
 
 use crate::errors::Errors;
-use crate::input::StrArgs;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
+
+use crate::ops::traits::Op;
 
 use rt_format::ParsedFormat;
 use rt_format::Specifier;
@@ -12,9 +15,9 @@ use rt_format::argument::FormatArgument;
 pub struct Format {}
 
 impl Format {
-    fn function_for_str(args: &[&str]) -> Result<String, Errors> {
+    fn function_for_chars(args: &[&str]) -> Result<String, Errors> {
         match args.len() {
-            0 => Err(Errors::ArgumentCountError((2..).into(), 0)),
+            0 => Err(Errors::ArgumentCountError(Self::acceptable_number_of_arguments(), 0, None)),
             1 => Ok(args[0].into()),
             _ => {
                 let template: &str = args[0];
@@ -25,12 +28,12 @@ impl Format {
                 // prepare arguments
                 let mut fmt_args = vec![];
                 for arg in args.iter().skip(1) {
-                    fmt_args.push(FmtStrArg(arg));
+                    fmt_args.push(FmtArg(arg.to_string()));
                 }
 
                 let repr = match ParsedFormat::parse(template, &fmt_args, &rt_format::NoNamedArguments) {
-                    Ok(val) => format!("{}", val),
-                    Err(err) => return Err(Errors::ArgValueError(0, err.to_string())),
+                    Ok(val) => val.to_string(),
+                    Err(failing_pos) => return Err(Errors::ArgValueError(0, format!("format string is invalid at zero-based position {}", failing_pos))),
                 };
 
                 Ok(repr)
@@ -39,96 +42,104 @@ impl Format {
     }
 }
 
-impl traits::OpMulti for Format {
+impl traits::Op for Format {
     fn name() -> &'static str { "format" }
-    fn description() -> &'static str { "replace {placeholders} in string #1 with consecutive arguments" }
+    fn usage() -> &'static str { "<#1 string format-with-placeholders> [<#2 string arg> 0 or more times]" }
+    fn description() -> &'static str { "replace {placeholders} in string #1 with consecutive arguments #2, #3, …" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(1) }
 
-    fn priority(args: &StrArgs) -> f32 {
-        if args.is_empty() { return 0.0; }
-
-        let template: &str = (&args[0]).into();
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let template: &str = args.get(0)?.try_into()?;
         let occurences_start = template.matches('{').count().max(5);
         let occurences_end = template.matches('}').count().max(5);
 
         if occurences_start < (args.len() - 1) {
             // NOTE: there are not sufficient placeholders for the arguments
-            return 0.0;
+            return Ok(0.0);
         }
 
         let mut score = 0.75 + (0.05 * occurences_start as f32);
         if occurences_start != occurences_end {
             score *= 0.5;
         }
-        score
+        Ok(score)
     }
 
-    fn run(args: &StrArgs) -> Result<Output, Errors> {
-        if args.is_empty() {
-            return Ok("".into());
+    fn run(args: &Args) -> Result<Output, Errors> {
+        match args.len() {
+            0 => Ok("".into()),
+            1 => {
+                let arg: &str = args.get(0)?.try_into()?;
+                Ok(arg.into())
+            },
+            _ => {
+                let mut arguments = vec![];
+                for arg in args.iter() {
+                    let s: &str = arg.try_into()?;
+                    arguments.push(s);
+                }
+        
+                Ok(Self::function_for_chars(&arguments)?.into())
+            }
         }
-
-        let arguments = args.iter().map(|e| -> &str { e.into() }).collect::<Vec<&str>>();
-        if args.len() == 1 {
-            return Ok(arguments[0].into());
-        }
-
-        Ok(Self::function_for_str(&arguments)?.into())
     }
 }
 
-pub struct FmtStrArg<'s>(&'s str);
+#[derive(Debug)]
+pub struct FmtArg(String);
 
-impl<'s> FormatArgument for FmtStrArg<'s> {
-    // TODO I don't think specifier is respected in fmt_*
-
+impl<'s> FormatArgument for FmtArg {
     fn supports_format(&self, _specifier: &Specifier) -> bool { true }
 
+    // NOTE do not use write! instead of fmt(…) here,
+    //      as this would ignore the specifier
+
     fn fmt_display(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        fmt::Display::fmt(&self.0, f)
     }
 
     fn fmt_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.0)
+        fmt::Debug::fmt(&self.0, f)
     }
 
     fn fmt_octal(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0.parse::<u64>() {
-            Ok(int) => write!(f, "{:o}", int),
+        match self.0.parse::<i64>() {
+            Ok(int) => fmt::Display::fmt(&int, f),
             Err(_) => Err(std::fmt::Error),
         }
     }
 
     fn fmt_lower_hex(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0.parse::<u64>() {
-            Ok(int) => write!(f, "{:x}", int),
+        match self.0.parse::<i64>() {
+            Ok(int) => fmt::Display::fmt(&int, f),
             Err(_) => Err(std::fmt::Error),
         }
     }
 
     fn fmt_upper_hex(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0.parse::<u64>() {
-            Ok(int) => write!(f, "{:X}", int),
+        match self.0.parse::<i64>() {
+            Ok(int) => fmt::Display::fmt(&int, f),
             Err(_) => Err(std::fmt::Error),
         }
     }
 
     fn fmt_binary(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0.parse::<u64>() {
-            Ok(int) => write!(f, "{:b}", int),
+        match self.0.parse::<i64>() {
+            Ok(int) => fmt::Display::fmt(&int, f),
             Err(_) => Err(std::fmt::Error),
         }
     }
 
     fn fmt_lower_exp(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0.parse::<u64>() {
-            Ok(int) => write!(f, "{:e}", int),
+        match self.0.parse::<i64>() {
+            Ok(int) => fmt::Display::fmt(&int, f),
             Err(_) => Err(std::fmt::Error),
         }
     }
 
     fn fmt_upper_exp(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0.parse::<u64>() {
-            Ok(int) => write!(f, "{:E}", int),
+        match self.0.parse::<i64>() {
+            Ok(int) => fmt::Display::fmt(&int, f),
             Err(_) => Err(std::fmt::Error),
         }
     }

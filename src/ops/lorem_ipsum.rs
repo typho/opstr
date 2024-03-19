@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 // NOTE: these transition probabilities have been determined from some example Lorem Ipsum text.
 //       It is simply a bi-gram Markov chain. I decided to exclude any punctuation and whitespace.
@@ -187,13 +188,15 @@ impl LoremIpsum {
     }
 }
 
-impl traits::OpOne for LoremIpsum {
+impl traits::Op for LoremIpsum {
     fn name() -> &'static str { "lorem-ipsum" }
-    fn description() -> &'static str { "generate (string #1) words of an Lorem Ipsum text" }
+    fn usage() -> &'static str { "<#1 int number-of-words>" }
+    fn description() -> &'static str { "generate (int #1) words of an Lorem Ipsum text" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let string: &str = arg.into();
-        match string.parse::<i64>() {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let string: &str = args.get(0)?.try_into()?;
+        Ok(match string.parse::<i64>() {
             Ok(count) => {
                 if (1..=10).contains(&count) {
                     0.21
@@ -202,11 +205,11 @@ impl traits::OpOne for LoremIpsum {
                 }
             },
             Err(_) => 0.0,
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let words: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let words: &str = args.get(0)?.try_into()?;
         match words.parse::<i64>() {
             Ok(count_words) => Ok(Self::generate(count_words).into()),
             Err(_) => Err(Errors::ArgTypeError(0, "argument must be an integer indicating the number of desired words".to_owned())),

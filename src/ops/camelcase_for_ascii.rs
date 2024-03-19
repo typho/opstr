@@ -1,25 +1,28 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct CamelcaseForAscii {}
 
-impl traits::OpOne for CamelcaseForAscii {
-    fn name() -> &'static str { "ascii-camelcase" }
-    fn description() -> &'static str { "replace the ASCII character after ' ' or '_' sequences with an uppercase letter" }
+impl traits::Op for CamelcaseForAscii {
+    fn name() -> &'static str { "camelcase-for-ascii" }
+    fn usage() -> &'static str { "<#1 string to-camelcase>" }
+    fn description() -> &'static str { "turn #1 to lowercase and replace the ASCII character after ' ' or '_' sequences with an uppercase letter" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let s: &str = arg.into();
-        if s.matches(' ').count() > 0 || s.matches('_').count() > 0 {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let s: &str = args.get(0)?.try_into()?;
+        Ok(if s.matches(' ').count() > 0 || s.matches('_').count() > 0 {
             0.58
         } else {
             0.0
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let name: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let name: &str = args.get(0)?.try_into()?;
 
         let mut just_skipped = false;
         let mut result = String::new();
@@ -30,7 +33,7 @@ impl traits::OpOne for CamelcaseForAscii {
                 result.push(letter.to_ascii_uppercase());
                 just_skipped = false;
             } else {
-                result.push(letter);
+                result.push(letter.to_ascii_lowercase());
                 just_skipped = false;
             }
         }

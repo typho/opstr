@@ -1,8 +1,9 @@
 use crate::auxiliary;
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 // TODO this map is incomplete
 // c.f. https://en.wikipedia.org/wiki/Unicode_subscripts_and_superscripts
@@ -68,8 +69,7 @@ impl Subscript {
         None
     }
     
-    fn lookup_arg(arg: &StrArg) -> String {
-        let text: &str = arg.into();
+    fn apply_replacements(text: &str) -> String {
         let mut score = 0.5f32;
         let mut subscript_string = String::new();
     
@@ -89,21 +89,26 @@ impl Subscript {
     }
 }
 
-impl traits::OpOne for Subscript {
+impl traits::Op for Subscript {
     fn name() -> &'static str { "subscript" }
-    fn description() -> &'static str { "return the subscript version of the provided string" }
-    fn priority(arg: &StrArg) -> f32 {
-        let original: &str = arg.into();
-        let sub: &str = &Self::lookup_arg(arg);
-        let diff = auxiliary::count_different_codepoints_of_shorter_string(original, sub);
+    fn usage() -> &'static str { "<#1 string to-convert>" }
+    fn description() -> &'static str { "return the subscript version of the provided string #1" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-        match diff {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        let sub: &str = &Self::apply_replacements(text);
+        let diff = auxiliary::count_different_codepoints_of_shorter_string(text, sub);
+
+        Ok(match diff {
             0 => 0.0,
             1 => 0.69,
             _ => 1. / diff as f32,
-        }
+        })
     }
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        Ok(Self::lookup_arg(arg).into())
+
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        Ok(Self::apply_replacements(text).into())
     }
 }

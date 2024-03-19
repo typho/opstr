@@ -1,14 +1,15 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct TextToEmoji {}
 
 const EMOJI_DATA: &'static [u8] = include_bytes!("text_to_emoji_data/emoji-data.bin");
 
 impl TextToEmoji {
-    fn function_for_str(arg: &str, arg_id: usize) -> Result<String, Errors> {
+    fn function_for_chars(arg: &str, arg_id: usize) -> Result<String, Errors> {
         let argument = arg.to_ascii_lowercase();
 
         // separator := U+001E RECORD SEPARATOR
@@ -38,19 +39,23 @@ impl TextToEmoji {
     }
 }
 
-impl traits::OpOne for TextToEmoji {
+impl traits::Op for TextToEmoji {
     fn name() -> &'static str { "text-to-emoji" }
-    fn description() -> &'static str { "given a Emoji Sequence Data (UTS #51) description return the corresponding emoji (e.g. 'smiling face with halo' returns '😇')" }
+    fn usage() -> &'static str { "<#1 string emoji-description>" }
+    fn description() -> &'static str { "given a Emoji Sequence Data (UTS #51) description string #1 return the corresponding emoji (e.g. 'smiling face with halo' returns '😇')" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        if Self::function_for_str(arg.into(), 0).is_ok() {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let name: &str = args.get(0)?.try_into()?;
+        Ok(if Self::function_for_chars(name, 0).is_ok() {
             1.0
         } else {
-            0.87
-        }
+            0.0
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        Ok(Self::function_for_str(arg.into(), 0)?.into())
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let name: &str = args.get(0)?.try_into()?;
+        Ok(Self::function_for_chars(name, 0)?.into())
     }
 }

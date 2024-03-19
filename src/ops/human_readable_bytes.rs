@@ -1,7 +1,8 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct HumanReadableBytes {}
 
@@ -22,13 +23,15 @@ impl HumanReadableBytes {
     }
 }
 
-impl traits::OpOne for HumanReadableBytes {
+impl traits::Op for HumanReadableBytes {
     fn name() -> &'static str { "human-readable-bytes" }
+    fn usage() -> &'static str { "<#1 string bytes-count>" }
     fn description() -> &'static str { "represent integer #1 (as 1024-based count of bytes) in a human-readable manner likely with two decimal points" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let res: Result<i64, Errors> = arg.try_into();
-        match res {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let res: Result<i64, Errors> = args.get(0)?.try_into();
+        Ok(match res {
             Ok(bytes_count) => {
                 if 1024 <= bytes_count && bytes_count <= i32::MAX as i64 {
                     0.875
@@ -37,11 +40,12 @@ impl traits::OpOne for HumanReadableBytes {
                 }
             },
             Err(_) => 0.0
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        Ok(Self::function_for_i64(arg.try_into()?).into())
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let bytes_count: i64 = args.get(0)?.try_into()?;
+        Ok(Self::function_for_i64(bytes_count).into())
     }
 }
 

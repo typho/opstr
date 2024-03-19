@@ -1,16 +1,19 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 pub struct IsPrefix {}
 
 impl IsPrefix {
-    fn function_for_str(arg1: &str, arg2: &str) -> bool {
+    fn function_for_chars(arg1: &str, arg2: &str) -> bool {
         arg1.starts_with(arg2)
     }
 
-    fn function_for_byteslice(arg1: &[u8], arg2: &[u8]) -> bool {
+    #[doc(hidden)]
+    #[warn(dead_code)]
+    fn function_for_bytes(arg1: &[u8], arg2: &[u8]) -> bool {
         if arg2.len() > arg1.len() {
             false
         } else {
@@ -19,27 +22,31 @@ impl IsPrefix {
     }
 }
 
-impl traits::OpTwo for IsPrefix {
+impl traits::Op for IsPrefix {
     fn name() -> &'static str { "is-prefix" }
+    fn usage() -> &'static str { "<#1 string base> <#2 string prefix>" }
     fn description() -> &'static str { "does string #1 start with string #2?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(arg1: &StrArg, arg2: &StrArg) -> f32 {
-        let s1: &str = arg1.into();
-        let s2: &str = arg2.into();
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let s1: &str = args.get(0)?.try_into()?;
+        let s2: &str = args.get(1)?.try_into()?;
         if s1.len() < s2.len() {
-            return 0.0;
+            return Ok(0.0);
         }
 
         let p = if s1.starts_with(s2) { 1. } else { 0.6 };
-        (match usize::min(s1.len(), s2.len()) {
+        Ok(match usize::min(s1.len(), s2.len()) {
             0 => 0.0,
             1 => 0.1,
             2 => 0.3,
             _ => 0.4,
-        }) * p
+        } * p)
     }
 
-    fn run(arg1: &StrArg, arg2: &StrArg) -> Result<Output, Errors> {
-        Ok(Self::function_for_str(arg1.into(), arg2.into()).into())
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let s1: &str = args.get(0)?.try_into()?;
+        let s2: &str = args.get(1)?.try_into()?;
+        Ok(Self::function_for_chars(s1, s2).into())
     }
 }

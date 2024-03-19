@@ -1,7 +1,8 @@
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 use unicode_normalization;
 use unicode_normalization::UnicodeNormalization;
@@ -9,26 +10,29 @@ use unicode_normalization::UnicodeNormalization;
 pub struct NormalizeWithNFD {}
 
 impl NormalizeWithNFD {
-    fn function_for_str(string: &str) -> String {
+    fn function_for_chars(string: &str) -> String {
         string.chars().nfd().to_string()
     }
 }
 
-impl traits::OpOne for NormalizeWithNFD {
+impl traits::Op for NormalizeWithNFD {
     fn name() -> &'static str { "normalize-with-nfd" }
+    fn usage() -> &'static str { "<#1 string to-normalize>" }
     // TODO add examples to description
     fn description() -> &'static str { "NFD-normalize Unicode string #1 which applies canonical decomposition (c.f. UAX #15)" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        if unicode_normalization::is_nfd(arg.into()) {
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        Ok(if unicode_normalization::is_nfd(text) {
             0.21
         } else {
             0.672
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let a: &str = arg.into();
-        Ok(Self::function_for_str(a).into())
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let text: &str = args.get(0)?.try_into()?;
+        Ok(Self::function_for_chars(text).into())
     }
 }

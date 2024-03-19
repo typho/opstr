@@ -32,6 +32,17 @@ impl fmt::Display for Range {
     }
 }
 
+impl Range {
+    pub(crate) fn has(&self, given: usize) -> bool {
+        match self {
+            Range::IndexIndex(start, end) => *start <= given && given <= *end,
+            Range::IndexOpen(start) => *start <= given,
+            Range::OpenIndex(end) => given <= *end,
+            Range::OpenOpen => true,
+        }
+    }
+}
+
 impl From<usize> for Range {
     fn from(value: usize) -> Self {
         Range::IndexIndex(value, value)

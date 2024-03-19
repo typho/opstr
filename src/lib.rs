@@ -21,7 +21,8 @@ pub(crate) mod output;
 
 pub use config::Configuration;
 pub use errors::Errors;
-pub use input::{StrArg, BytesArg};
-pub use matcher::list_ops;
+pub use input::{Arg, Args};
+pub use matcher::list_all_ops;
+pub use matcher::list_matching_ops;
 pub use matcher::run_op;
 pub use matcher::run_unspecified_op;

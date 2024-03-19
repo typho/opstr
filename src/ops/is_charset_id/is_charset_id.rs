@@ -3,9 +3,10 @@
 //  MD5sum: 5afe8dbdee2e83301f2b756467a2c8d4
 
 use crate::errors::Errors;
-use crate::input::StrArg;
+use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
+use crate::range;
 
 use crate::ops::is_charset_id::CD;
 use crate::ops::is_charset_id::CharsetDataEntry;
@@ -80,14 +81,16 @@ impl IsCharsetID {
     }
 }
 
-impl traits::OpOne for IsCharsetID {
+impl traits::Op for IsCharsetID {
     fn name() -> &'static str { "is-charset-id" }
+    fn usage() -> &'static str { "<#1 string to-encode>" }
     fn description() -> &'static str { "is the given name argument #1 a valid charset identifier?" }
+    fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(arg: &StrArg) -> f32 {
-        let candidate: &str = arg.into();
+    fn priority(args: &Args) -> Result<f32, Errors> {
+        let candidate: &str = args.get(0)?.try_into()?;
 
-        match Self::lookup(candidate) {
+        Ok(match Self::lookup(candidate) {
             Some(data) => {
                 let common_name = if !data.preferred_name.is_empty() { data.preferred_name } else { data.name };
                 if candidate.to_lowercase() == common_name.to_lowercase() {
@@ -97,11 +100,11 @@ impl traits::OpOne for IsCharsetID {
                 }
             },
             None => 0.18,
-        }
+        })
     }
 
-    fn run(arg: &StrArg) -> Result<Output, Errors> {
-        let candidate: &str = arg.into();
+    fn run(args: &Args) -> Result<Output, Errors> {
+        let candidate: &str = args.get(0)?.try_into()?;
 
         match Self::lookup(candidate) {
             Some(data) => {
