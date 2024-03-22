@@ -56,7 +56,7 @@ impl Configuration {
     pub fn overwrite_with_clap(&mut self, out_radix: Option<u8>, out_item: Option<isize>, out_column: Option<String>, out_alpha_upper: Option<bool>, out_color_scheme: Option<String>, out_locale: Option<String>, out_syntax: Option<String>) -> Result<(), Errors> {
         if let Some(radix) = out_radix {
             if !(radix == 2 || radix == 10 || radix == 16) {
-                return Err(Errors::CLIValueError("out-radix", "Only radices 2, 10, and 16 are supported".to_string()));
+                return Err(Errors::CLIValueError("radix", "Only radices 2, 10, and 16 are supported".to_string()));
             }
             self.radix = out_radix.unwrap_or(10) as usize;
         }
@@ -78,7 +78,7 @@ impl Configuration {
         if let Some(color_scheme) = out_color_scheme {
             match ColorScheme::by_name(&color_scheme) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Err(Errors::CLIValueError("out-color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(Errors::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
             }
         }
 
@@ -98,7 +98,7 @@ impl Configuration {
                 "kotlin" => Syntax::Kotlin,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Err(Errors::CLIValueError("out-syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(Errors::CLIValueError("syntax", "Sorry, no support yet".to_string())),
             };
         }
 
@@ -111,7 +111,7 @@ impl Configuration {
                 Ok(r) => {
                     self.radix = r as usize;
                     if !(r == 2 || r == 10 || r == 16) {
-                        return Err(Errors::CLIValueError("out-radix", "Only radices 2, 10, and 16 are supported".to_string()));
+                        return Err(Errors::CLIValueError("radix", "Only radices 2, 10, and 16 are supported".to_string()));
                     }            
                 },
                 Err(_) => return Err(Errors::CLIValueError("OPSTR_RADIX", "env value is not an integer".to_string())),
@@ -128,7 +128,7 @@ impl Configuration {
         if let Ok(val) = env::var("OPSTR_COLOR_SCHEME") {
             match ColorScheme::by_name(&val) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Err(Errors::CLIValueError("out-color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(Errors::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
             }
         }
 
@@ -148,7 +148,7 @@ impl Configuration {
                 "kotlin" => Syntax::Kotlin,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Err(Errors::CLIValueError("out-syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(Errors::CLIValueError("syntax", "Sorry, no support yet".to_string())),
             };
         }
 
@@ -173,6 +173,10 @@ pub enum ColorScheme {
     #[default]
     Default,
     RegularAndBold,
+    Red,
+    Green,
+    Blue,
+    White,
     // TODO more schemes
 }
 
@@ -186,6 +190,10 @@ impl ColorScheme {
             "none" => Some(NoColors),
             "default" => Some(Default),
             "regularandbold" => Some(RegularAndBold),
+            "red" => Some(Red),
+            "green" => Some(Green),
+            "blue" => Some(Blue),
+            "white" => Some(White),
             _ => None,
         }
     }
@@ -223,6 +231,34 @@ impl ColorScheme {
                 stdout.reset()?;
                 writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
             },
+            ColorScheme::Red => {
+                write!(&mut stdout, "----- ")?;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Ansi256(1))))?;
+                write!(&mut stdout, "{}", op_name)?;
+                stdout.reset()?;
+                writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
+            },
+            ColorScheme::Green => {
+                write!(&mut stdout, "----- ")?;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Ansi256(34))))?;
+                write!(&mut stdout, "{}", op_name)?;
+                stdout.reset()?;
+                writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
+            },
+            ColorScheme::Blue => {
+                write!(&mut stdout, "----- ")?;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Ansi256(61))))?;
+                write!(&mut stdout, "{}", op_name)?;
+                stdout.reset()?;
+                writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
+            },
+            ColorScheme::White => {
+                write!(&mut stdout, "----- ")?;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Ansi256(236))))?;
+                write!(&mut stdout, "{}", op_name)?;
+                stdout.reset()?;
+                writeln!(&mut stdout, " {}", "-".repeat((65 - op_name.len()).max(0)))?;
+            },
         };
         stdout.reset()?;
         Ok(())
@@ -241,6 +277,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_fg(Some(Color::Magenta)),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(218))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(70))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(26))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(243))),
         })?;
         write!(&mut stderr, "{}", label)?;
         stderr.reset()?;
@@ -260,6 +300,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_fg(Some(Color::Red)),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(9))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(46))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(27))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(232))),
         })?;
         write!(&mut stderr, "{}", label)?;
         stderr.flush()?;
@@ -280,6 +324,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_fg(Some(Color::White)),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(88))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(36))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(147))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(240))),
         })?;
         write!(&mut stdout, "{}", word)?;
         stdout.reset()?;
@@ -298,6 +346,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_bold(true),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(216))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(190))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(45))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(246))),
         })?;
         write!(&mut stdout, "{}", wrapper)?;
         stdout.reset()?;
@@ -316,6 +368,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_bold(true),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(209))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(192))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(117))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(243))),
         })?;
         write!(&mut stdout, "{}", sep)?;
         stdout.reset()?;
@@ -335,6 +391,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_bold(true).set_fg(Some(Color::Blue)),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(131))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(118))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(33))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(255))),
         })?;
         write!(&mut stdout, "{}", wrapper)?;
         stdout.reset()?;
@@ -353,6 +413,10 @@ impl ColorScheme {
             ColorScheme::NoColors => &cs,
             ColorScheme::Default => cs.set_bold(true).set_fg(Some(Color::Green)),
             ColorScheme::RegularAndBold => cs.set_bold(true),
+            ColorScheme::Red => cs.set_fg(Some(Color::Ansi256(160))),
+            ColorScheme::Green => cs.set_fg(Some(Color::Ansi256(120))),
+            ColorScheme::Blue => cs.set_fg(Some(Color::Ansi256(105))),
+            ColorScheme::White => cs.set_fg(Some(Color::Ansi256(252))),
         })?;
         write!(&mut stdout, "{}", sep)?;
         stdout.reset()?;
@@ -367,6 +431,10 @@ impl fmt::Display for ColorScheme {
             NoColors => f.write_str("None"),
             Default => f.write_str("Default"),
             RegularAndBold => f.write_str("RegularAndBold"),
+            Red => f.write_str("Red"),
+            Green => f.write_str("Green"),
+            Blue => f.write_str("Blue"),
+            White => f.write_str("White"),
         }
     }
 }

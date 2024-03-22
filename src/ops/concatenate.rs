@@ -16,7 +16,7 @@ impl Concatenate {
     }
 
     #[doc(hidden)]
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn function_for_bytes(args: &[&[u8]]) -> Vec<u8> {
         let mut result = vec![];
         for arg in args {
