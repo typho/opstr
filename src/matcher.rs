@@ -50,7 +50,7 @@ pub fn list_matching_ops(_conf: &Configuration, args: &input::Args) -> Vec<(&'st
 }
 
 pub fn run_op(conf: &Configuration, args: &input::Args, op_name: &str) -> Result<(&'static str, output::Output), Errors> {
-    // (1) search for args-independent exact match
+    // (1) search for an args-independent exact match
     if let Some((name, usage, acceptable_range)) = find_op_by_exact_name(conf, args, op_name) {
         if !acceptable_range.has(args.len()) {
             return Err(Errors::ArgumentCountError(acceptable_range, args.len(), Some(usage.to_owned())));
@@ -65,7 +65,7 @@ pub fn run_op(conf: &Configuration, args: &input::Args, op_name: &str) -> Result
     }
 
     // (3) Sort ops by similarity
-    names_and_similarity.sort_by_key(|e| (-1000.0 * e.1) as i32);
+    names_and_similarity.sort_by_key(|e| (1000.0 * e.1) as i32);
 
     // (4) Yield message "Did you mean …?"
     if let Some((last, _)) = names_and_similarity.last() {

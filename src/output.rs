@@ -642,7 +642,6 @@ impl Output {
                 println!(";");
             },
             Output::Association { data, .. } => {
-                // TODO sort by keys
                 if data.is_empty() {
                     print!("int ");
                     col.keyword("keys")?;
@@ -756,7 +755,6 @@ impl Output {
                 }
             },
             Output::Association { data, .. } => {
-                // TODO sort by keys
                 // TODO introduce special case if data.is_homogeneous()?
                 print!("map[");
                 col.keyword("any")?;
@@ -845,18 +843,38 @@ impl Output {
                 println!("");
             },
             Output::Association{ data: assoc, .. } => {
-                // TODO sort by keys
+                // NOTE: humans prefer it sorted
+                //       for other syntaxes I won't sort though, because the operation is sufficiently expensive
+                let mut key_order = Vec::from_iter(assoc.keys());
+                let mut max_key_width = 0;
+                key_order.sort_by_key(|key| {
+                    let repr = key.represent_human(conf);
+                    max_key_width = max_key_width.max(repr.chars().count());
+                    repr
+                });
+
                 col.outer_wrapper("{ ")?;
-                for (i, (key, value)) in assoc.iter().enumerate() {
+                for (i, key) in key_order.iter().enumerate() {
+                    let value = assoc.get(key).unwrap();
                     if i != 0 {
                         println!();
                         col.outer_separator("| ")?;
                     }
 
-                    print!("{}", key.represent_human(conf));
-                    col.inner_separator(":: ")?;
+                    if max_key_width > 0 && max_key_width < 80 {
+                        let repr_key = key.represent_human(conf);
+                        print!("{}", repr_key);
+                        col.inner_separator("::  ")?;
+                        let already_shown = repr_key.chars().count() + 4;
+                        let to_show = 8 - (already_shown % 8);
+                        print!("{}", " ".repeat(to_show));
+                    } else {
+                        print!("{}", key.represent_human(conf));
+                        col.inner_separator(":: ")?;
+                    }
                     print!("{}", value.represent_human(conf));
                 }
+                println!("");
                 col.outer_wrapper("}")?;
                 println!("");
             },
@@ -955,7 +973,6 @@ impl Output {
                 println!(";");
             },
             Output::Association { data, .. } => {
-                // TODO sort by keys
                 if data.is_empty() {
                     print!("Map<String, String> ");
                     col.keyword("map")?;
@@ -1090,7 +1107,6 @@ impl Output {
                 println!("");
             },
             Output::Association { data, .. } => {
-                // TODO sort by keys
                 if data.is_empty() {
                     col.keyword("emptyMap")?;
                     println!("()");
@@ -1182,7 +1198,6 @@ impl Output {
                 println!("");
             },
             Output::Association { data, .. } => {
-                // TODO sort by keys
                 col.outer_wrapper("{")?;
                 for (i, (key, value)) in data.iter().enumerate() {
                     print!("{}", key.represent_python(conf));
@@ -1339,7 +1354,6 @@ impl Output {
                 }
             },
             Output::Association { data, .. } => {
-                // TODO sort by keys
                 col.note_label("NOTE")?;
                 println!(": heterogeneous maps cannot be handled in this syntax");
 
