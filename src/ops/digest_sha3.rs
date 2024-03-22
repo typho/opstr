@@ -19,7 +19,7 @@ impl DigestSha3256 {
     }
 
     #[doc(hidden)]
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn function_for_bytes(arg: &[u8]) -> String {
         let mut hasher = Sha3_256::new();
         hasher.update(arg);

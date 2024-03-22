@@ -17,7 +17,7 @@ impl DigestMd5 {
     }
 
     #[doc(hidden)]
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn function_for_bytes(arg: &[u8]) -> String {
         md5::compute(arg).encode_hex()
     }

@@ -19,7 +19,7 @@ impl DigestSha1 {
     }
 
     #[doc(hidden)]
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn function_for_bytes(arg: &[u8]) -> String {
         let mut hasher = Sha1::new();
         hasher.update(arg);

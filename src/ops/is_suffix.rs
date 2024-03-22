@@ -12,7 +12,7 @@ impl IsSuffix {
     }
 
     #[doc(hidden)]
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn function_for_bytes(arg1: &[u8], arg2: &[u8]) -> bool {
         if arg2.len() > arg1.len() {
             false
