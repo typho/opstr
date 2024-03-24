@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -18,7 +18,7 @@ impl traits::Op for Replace {
     fn description() -> &'static str { "replace string #2 with string #3 in string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(3, 3) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let base_arg: &str = args.get(0)?.try_into()?;
         let search_arg: &str = args.get(1)?.try_into()?;
 
@@ -38,7 +38,7 @@ impl traits::Op for Replace {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let s1: &str = args.get(0)?.try_into()?;
         let s2: &str = args.get(1)?.try_into()?;
         let s3: &str = args.get(2)?.try_into()?;

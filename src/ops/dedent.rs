@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -39,7 +39,7 @@ impl traits::Op for Dedent {
     fn description() -> &'static str { "identify and remove common indentation among all non-empty lines of string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let common_prefix = Self::identify_common_prefix_on_nonempty_lines(string);
 
@@ -52,7 +52,7 @@ impl traits::Op for Dedent {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let common_prefix = Self::identify_common_prefix_on_nonempty_lines(string);
 

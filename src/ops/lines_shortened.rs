@@ -1,6 +1,6 @@
 // TODO review naming
 
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -75,9 +75,9 @@ impl traits::Op for LinesShortened {
     fn description() -> &'static str { "shorten lines in string #1, if necessary, not to exceed width #2" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
-        let w: Result<i64, Errors> = args.get(1)?.try_into();
+        let w: Result<i64, LibError> = args.get(1)?.try_into();
 
         Ok(match w {
             Ok(width) => {
@@ -103,9 +103,9 @@ impl traits::Op for LinesShortened {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
-        let w: Result<i64, Errors> = args.get(1)?.try_into();
+        let w: Result<i64, LibError> = args.get(1)?.try_into();
 
         match w {
             Ok(width) => {
@@ -126,7 +126,7 @@ impl traits::Op for LinesShortened {
                 }
                 Ok(result.into())
             },
-            Err(_) => Err(Errors::ArgValueError(1, "".to_owned())),
+            Err(_) => Err(LibError::ArgValueError(1, "".to_owned())),
         }
     }
 }

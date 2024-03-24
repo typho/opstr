@@ -6,25 +6,25 @@
 use std::collections::HashMap;
 
 use crate::auxiliary;
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input;
 use crate::ops;
 use crate::config::Configuration;
-use crate::output;
+use crate::output::{Output,OutputValue};
 use crate::range;
 
-/// Return the list of all operations as association of (name, description) entries.
-pub fn list_all_ops(_conf: &Configuration) -> output::Output {
+/// Return the list of all operations as `Output::Association` of (name, description) entries.
+pub fn list_all_ops(_conf: &Configuration) -> Output {
     let mut results = HashMap::new();
 
     for (fn_name, fn_desc, _, _, _, _) in ops::INDEX {
-        results.insert(output::OutputValue::from_str(fn_name()), output::OutputValue::from_str(fn_desc()));
+        results.insert(OutputValue::from_str(fn_name()), OutputValue::from_str(fn_desc()));
     }
 
-    output::Output::Association { data: results, notes: vec![] }
+    Output::Association { data: results, notes: vec![] }
 }
 
-/// Return the ordered list of appropriate operations as association of (name, description) entries.
+/// Return the ordered list of appropriate operations as `Output::Association` of (name, description) entries.
 pub fn list_matching_ops(_conf: &Configuration, args: &input::Args) -> Vec<(&'static str, &'static str)> {
     let mut fns = vec![];
 
@@ -49,11 +49,12 @@ pub fn list_matching_ops(_conf: &Configuration, args: &input::Args) -> Vec<(&'st
     fns.iter().map(|e| { (e.0, e.1) }).collect::<Vec<(&'static str, &'static str)>>()
 }
 
-pub fn run_op(conf: &Configuration, args: &input::Args, op_name: &str) -> Result<(&'static str, output::Output), Errors> {
+/// Return `(op_name, Output)` as result of running the specified operation `op_name` with `Args`
+pub fn run_op(conf: &Configuration, args: &input::Args, op_name: &str) -> Result<(&'static str, Output), LibError> {
     // (1) search for an args-independent exact match
     if let Some((name, usage, acceptable_range)) = find_op_by_exact_name(conf, args, op_name) {
         if !acceptable_range.has(args.len()) {
-            return Err(Errors::ArgumentCountError(acceptable_range, args.len(), Some(usage.to_owned())));
+            return Err(LibError::ArgumentCountError(acceptable_range, args.len(), Some(usage.to_owned())));
         }
         return Ok((name, run_op_by_name(conf, args, op_name)?));
     }
@@ -72,7 +73,7 @@ pub fn run_op(conf: &Configuration, args: &input::Args, op_name: &str) -> Result
         eprintln!("Did you mean ‘{}’?", last);
     }
 
-    Err(Errors::UnknownOp(op_name.to_owned()))
+    Err(LibError::UnknownOp(op_name.to_owned()))
 }
 
 fn find_op_by_exact_name(_conf: &Configuration, _args: &input::Args, op_name: &str) -> Option<(&'static str, &'static str, range::Range)> {
@@ -88,19 +89,19 @@ fn find_op_by_exact_name(_conf: &Configuration, _args: &input::Args, op_name: &s
     None
 }
 
-fn run_op_by_name(_conf: &Configuration, args: &input::Args, op_name: &str) -> Result<output::Output, Errors> {
+fn run_op_by_name(_conf: &Configuration, args: &input::Args, op_name: &str) -> Result<Output, LibError> {
     for (fn_name, _fn_desc, _fn_usage, _fn_args, _fn_priority, fn_impl) in ops::INDEX {
         if fn_name() != op_name {
             continue;
         }
-        // TODO multi fn should provide a function which allows to check the number of arguments
         return fn_impl(args);
     }
 
-    Err(Errors::UnknownOp(op_name.to_owned()))
+    Err(LibError::UnknownOp(op_name.to_owned()))
 }
 
-pub fn run_unspecified_op(conf: &Configuration, args: &input::Args) -> Result<(), Errors> {
+/// Run all operations appropriate for the provided `Args`. Write the result to stdout & stderr, so we return `()`
+pub fn run_matching_ops(conf: &Configuration, args: &input::Args) -> Result<(), LibError> {
     // (1) determine the set of functions returning priority > 0.0
     let mut priority_per_function: Vec<(&'static str, f32)> = vec![];
 

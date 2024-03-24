@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -26,7 +26,7 @@ impl traits::Op for LengthMinimum {
     fn description() -> &'static str { "return the first string among the shortest strings" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         Ok(if args.len() >= 3 {
             0.71
         } else {
@@ -34,7 +34,7 @@ impl traits::Op for LengthMinimum {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let mut arguments = vec![];
         for arg in args.iter() {
             let s: &str = arg.try_into()?;

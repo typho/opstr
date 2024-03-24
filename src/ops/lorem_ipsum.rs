@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -194,7 +194,7 @@ impl traits::Op for LoremIpsum {
     fn description() -> &'static str { "generate (int #1) words of an Lorem Ipsum text" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         Ok(match string.parse::<i64>() {
             Ok(count) => {
@@ -208,11 +208,11 @@ impl traits::Op for LoremIpsum {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let words: &str = args.get(0)?.try_into()?;
         match words.parse::<i64>() {
             Ok(count_words) => Ok(Self::generate(count_words).into()),
-            Err(_) => Err(Errors::ArgTypeError(0, "argument must be an integer indicating the number of desired words".to_owned())),
+            Err(_) => Err(LibError::ArgTypeError(0, "argument must be an integer indicating the number of desired words".to_owned())),
         }
     }
 }

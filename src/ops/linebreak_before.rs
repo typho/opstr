@@ -1,7 +1,7 @@
 use std::iter;
 use std::str;
 
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -76,6 +76,8 @@ impl<'l> LinebreakOpportunities for LinebreakOpportunitiesAtN<'l> {}
 pub struct LinebreakBefore {}
 
 impl LinebreakBefore {
+    // TODO do we need this?
+    #[allow(dead_code)]
     fn find_linebreak_opportunities(line: &str) -> Vec<usize> {
         let mut lbo = vec![];
 
@@ -157,7 +159,7 @@ impl traits::Op for LinebreakBefore {
     fn description() -> &'static str { "linebreak long lines in (text #1) before they reach (integer #2) codepoints" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let width: i64 = match args.get(1)?.try_into() {
             Ok(int) => int,
@@ -173,7 +175,7 @@ impl traits::Op for LinebreakBefore {
         } * lines_prio)
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let width: i64 = args.get(1)?.try_into()?;
 

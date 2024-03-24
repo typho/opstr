@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output,OutputValue};
@@ -18,12 +18,12 @@ impl traits::Op for CodepointsUstringList {
     fn description() -> &'static str { "represent string #1 with Unicode codepoints, e.g. [“U+0048”, “U+0069”]" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(if s.len() / 10 > 50 { 0.2 } else { 0.5 })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let arg: &str = args.get(0)?.try_into()?;
         let ustrings = Self::function_for_chars(arg.into());
         let mut uvalues = vec![];

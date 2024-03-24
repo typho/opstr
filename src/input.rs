@@ -7,21 +7,24 @@
 use std::slice;
 use crate::errors;
 
-/// An argument for an operation.
+/// An argument for an operation
 #[derive(Clone, Debug, Hash, PartialEq)]
 pub enum Arg {
     /// A sequence of Unicode codepoints (acc. to Unicode) and the index of this argument.
     Chars(String, usize),
     /// A sequence of bytes (only recommended for non-Unicode content) and the index of this argument.
-    /// TODO: bytes support is currently not implemented
+    /// NOTE: bytes support is currently not implemented
     Bytes(Vec<u8>, usize),
 }
 
 impl Arg {
+    /// Construct a Unicode string `Arg` given the provided string, and the zero-based index of this argument
     pub fn from_str(arg: &str, arg_id: usize) -> Self {
         Self::Chars( arg.to_owned(), arg_id )
     }
 
+    /// Construct a byteslice `Arg` given the provided bytes, and the zero-based index of this argument
+    #[doc(hidden)]
     pub fn from_bytes(arg: &[u8], arg_id: usize) -> Self {
         Self::Bytes( arg.to_owned(), arg_id )
     }
@@ -38,40 +41,47 @@ impl Arg {
 impl Eq for Arg {}
 
 impl TryFrom<&Arg> for i64 {
-    type Error = errors::Errors;
+    type Error = errors::LibError;
 
     fn try_from(value: &Arg) -> Result<Self, Self::Error> {
         match value {
             Arg::Chars(s, idx) => {
                 match s.parse::<i64>() {
                     Ok(int) => Ok(int),
-                    Err(_) => Err(errors::Errors::ArgValueError(*idx, format!("cannot be converted into an integer: '{}'", s))),
+                    Err(_) => Err(errors::LibError::ArgValueError(*idx, format!("cannot be converted into an integer: '{}'", s))),
                 }
             },
-            Arg::Bytes(_, idx) => Err(errors::Errors::ArgTypeError(*idx, "this argument cannot be converted into an integer".to_owned())),
+            Arg::Bytes(_, idx) => Err(errors::LibError::ArgTypeError(*idx, "this argument cannot be converted into an integer".to_owned())),
         }
     }
 }
 
 impl<'s> TryFrom<&'s Arg> for &'s str {
-    type Error = errors::Errors;
+    type Error = errors::LibError;
 
     fn try_from(value: &'s Arg) -> Result<Self, Self::Error> {
         match value {
-            Arg::Chars(s, idx) => Ok(s),
-            Arg::Bytes(_, idx) => Err(errors::Errors::ArgTypeError(*idx, "this argument cannot be converted into a string".to_owned())),
+            Arg::Chars(s, _idx) => Ok(s),
+            Arg::Bytes(_, idx) => Err(errors::LibError::ArgTypeError(*idx, "this argument cannot be converted into a string".to_owned())),
         }
     }
 }
 
-
+/// An ordered container for arguments
+#[derive(Clone, Debug, PartialEq)]
 pub struct Args {
     args: Vec<Arg>,
 }
 
 impl Args {
+    /// Construct instance with provided `Arg` instances
     pub fn from(arguments: &[Arg]) -> Args {
         Args { args: arguments.to_vec() }
+    }
+
+    /// Consumes provided `Arg` instance and adds it as final element to the container
+    pub fn add(&mut self, arg: Arg) {
+        self.args.push(arg);
     }
 
     /// Return number of arguments
@@ -79,13 +89,15 @@ impl Args {
         self.args.len()
     }
 
-    pub fn get(&self, index: usize) -> Result<&Arg, errors::Errors> {
+    /// Return the (zero-based) index-th element, or return `Err` if it does not exist
+    pub fn get(&self, index: usize) -> Result<&Arg, errors::LibError> {
         match self.args.get(index) {
             Some(arg) => Ok(arg),
-            None => Err(errors::Errors::IOError(format!("argument {} does not exist", index))),
+            None => Err(errors::LibError::IOError(format!("argument {} does not exist", index))),
         }
     }
 
+    /// Return the (zero-based) index-th element or return the provided `default` `Arg`
     pub fn get_or_default<'s, 'd: 's>(&'s self, index: usize, default: &'d Arg) -> &Arg {
         match self.args.get(index) {
             Some(arg) => arg,
@@ -93,6 +105,7 @@ impl Args {
         }
     }
 
+    /// Return an iterator over the container
     pub fn iter<'s>(&'s self) -> slice::Iter<'s, Arg> {
         self.args.iter()
     }

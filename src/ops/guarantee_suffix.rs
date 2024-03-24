@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -12,7 +12,7 @@ impl traits::Op for GuaranteeSuffix {
     fn description() -> &'static str { "if string #1 does not end with string #2, append it" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let base: &str = args.get(0)?.try_into()?;
         let suffix: &str = args.get(1)?.try_into()?;
         Ok(if base.len() > suffix.len() {
@@ -22,7 +22,7 @@ impl traits::Op for GuaranteeSuffix {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let base: &str = args.get(0)?.try_into()?;
         let suffix: &str = args.get(1)?.try_into()?;
 

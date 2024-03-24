@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -32,7 +32,7 @@ impl traits::Op for Concatenate {
     fn description() -> &'static str { "concatenate all provided strings" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(0) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         Ok(match args.len() {
             0 | 1 => 0.0,
             2 => 0.34,
@@ -40,7 +40,7 @@ impl traits::Op for Concatenate {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let mut arguments = vec![];
         for arg in args.iter() {
             let s: &str = arg.try_into()?;

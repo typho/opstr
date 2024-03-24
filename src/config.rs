@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 
 use std::default;
 use std::env;
@@ -9,6 +9,7 @@ use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Global application settings (mainly to configure representation)
+#[non_exhaustive]
 #[derive(Clone, Debug, Hash, PartialEq)]
 pub struct Configuration {
     /// Radix used to represent bytes and integers in the output.
@@ -35,7 +36,7 @@ pub struct Configuration {
     /// (mainly programming languages, like 'Go' or 'python'),
     /// but the default is a human-readable version.
     /// Default: ``Syntax::Human``.
-    pub output_syntax: Syntax,
+    pub syntax: Syntax,
 }
 
 impl default::Default for Configuration {
@@ -47,16 +48,17 @@ impl default::Default for Configuration {
             item: None,
             column: None,
             locale: String::from("en-US"),
-            output_syntax: Syntax::Human,
+            syntax: Syntax::Human,
         }
     }
 }
 
 impl Configuration {
-    pub fn overwrite_with_clap(&mut self, out_radix: Option<u8>, out_item: Option<isize>, out_column: Option<String>, out_alpha_upper: Option<bool>, out_color_scheme: Option<String>, out_locale: Option<String>, out_syntax: Option<String>) -> Result<(), Errors> {
+    /// Provided the clap (CLI parsing library) arguments as function arguments, overwrite members of this `Configuration` instance
+    pub fn overwrite_with_clap(&mut self, out_radix: Option<u8>, out_item: Option<isize>, out_column: Option<String>, out_alpha_upper: Option<bool>, out_color_scheme: Option<String>, in_locale: Option<String>, out_syntax: Option<String>) -> Result<(), LibError> {
         if let Some(radix) = out_radix {
             if !(radix == 2 || radix == 10 || radix == 16) {
-                return Err(Errors::CLIValueError("radix", "Only radices 2, 10, and 16 are supported".to_string()));
+                return Err(LibError::CLIValueError("radix", "Only radices 2, 10, and 16 are supported".to_string()));
             }
             self.radix = out_radix.unwrap_or(10) as usize;
         }
@@ -78,18 +80,18 @@ impl Configuration {
         if let Some(color_scheme) = out_color_scheme {
             match ColorScheme::by_name(&color_scheme) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Err(Errors::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(LibError::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
             }
         }
 
-        if let Some(locale) = out_locale {
+        if let Some(locale) = in_locale {
             // NOTE: there is no trivial locale verification algorithm
             // I expect some failure during the operation later, if the locale is invalid, but must be provided.
             self.locale = locale;
         }
 
         if let Some(syntax) = out_syntax {
-            self.output_syntax = match syntax.to_ascii_lowercase().as_str() {
+            self.syntax = match syntax.to_ascii_lowercase().as_str() {
                 "c" => Syntax::C,
                 "c++" | "cpp" => Syntax::Cpp,
                 "golang" | "go" => Syntax::Golang,
@@ -98,23 +100,24 @@ impl Configuration {
                 "kotlin" => Syntax::Kotlin,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Err(Errors::CLIValueError("syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(LibError::CLIValueError("syntax", "Sorry, no support yet".to_string())),
             };
         }
 
         Ok(())
     }
 
-    pub fn overwrite_with_env(&mut self) -> Result<(), Errors> {
+    /// Reading the defined environment variables for this library, overwrite members of this `Configuration` instance
+    pub fn overwrite_with_env(&mut self) -> Result<(), LibError> {
         if let Ok(val) = env::var("OPSTR_RADIX") {
             match val.parse::<u8>() {
                 Ok(r) => {
                     self.radix = r as usize;
                     if !(r == 2 || r == 10 || r == 16) {
-                        return Err(Errors::CLIValueError("radix", "Only radices 2, 10, and 16 are supported".to_string()));
+                        return Err(LibError::CLIValueError("radix", "Only radices 2, 10, and 16 are supported".to_string()));
                     }            
                 },
-                Err(_) => return Err(Errors::CLIValueError("OPSTR_RADIX", "env value is not an integer".to_string())),
+                Err(_) => return Err(LibError::CLIValueError("OPSTR_RADIX", "env value is not an integer".to_string())),
             }
         }
 
@@ -128,7 +131,7 @@ impl Configuration {
         if let Ok(val) = env::var("OPSTR_COLOR_SCHEME") {
             match ColorScheme::by_name(&val) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Err(Errors::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(LibError::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
             }
         }
 
@@ -139,7 +142,7 @@ impl Configuration {
         }
 
         if let Ok(val) = env::var("OPSTR_SYNTAX") {
-            self.output_syntax = match val.to_ascii_lowercase().as_str() {
+            self.syntax = match val.to_ascii_lowercase().as_str() {
                 "c" => Syntax::C,
                 "c++" | "cpp" => Syntax::Cpp,
                 "golang" | "go" => Syntax::Golang,
@@ -148,7 +151,7 @@ impl Configuration {
                 "kotlin" => Syntax::Kotlin,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Err(Errors::CLIValueError("syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(LibError::CLIValueError("syntax", "Sorry, no support yet".to_string())),
             };
         }
 
@@ -177,7 +180,6 @@ pub enum ColorScheme {
     Green,
     Blue,
     White,
-    // TODO more schemes
 }
 
 impl Eq for ColorScheme {}

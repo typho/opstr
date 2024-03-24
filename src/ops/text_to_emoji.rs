@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -9,7 +9,7 @@ pub struct TextToEmoji {}
 const EMOJI_DATA: &'static [u8] = include_bytes!("text_to_emoji_data/emoji-data.bin");
 
 impl TextToEmoji {
-    fn function_for_chars(arg: &str, arg_id: usize) -> Result<String, Errors> {
+    fn function_for_chars(arg: &str, arg_id: usize) -> Result<String, LibError> {
         let argument = arg.to_ascii_lowercase();
 
         // separator := U+001E RECORD SEPARATOR
@@ -23,11 +23,11 @@ impl TextToEmoji {
 
             let utf8_encoded_emoji = match String::from_utf8(data[0].to_vec()) {
                 Ok(emoji) => emoji,
-                Err(_) => return Err(Errors::InvalidData("Emoji data contains internal error".to_owned())),
+                Err(_) => return Err(LibError::InvalidData("Emoji data contains internal error".to_owned())),
             };
             let emoji_description = match String::from_utf8(data[1].to_vec()) {
                 Ok(emoji) => emoji,
-                Err(_) => return Err(Errors::InvalidData("Emoji data descriptions contain internal error".to_owned())),
+                Err(_) => return Err(LibError::InvalidData("Emoji data descriptions contain internal error".to_owned())),
             };
 
             if emoji_description == argument {
@@ -35,7 +35,7 @@ impl TextToEmoji {
             }
         }
 
-        Err(Errors::ArgValueError(arg_id, format!("Unknown emoji identifier: '{}'", arg)))
+        Err(LibError::ArgValueError(arg_id, format!("Unknown emoji identifier: '{}'", arg)))
     }
 }
 
@@ -45,7 +45,7 @@ impl traits::Op for TextToEmoji {
     fn description() -> &'static str { "given a Emoji Sequence Data (UTS #51) description string #1 return the corresponding emoji (e.g. 'smiling face with halo' returns '😇')" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let name: &str = args.get(0)?.try_into()?;
         Ok(if Self::function_for_chars(name, 0).is_ok() {
             1.0
@@ -54,7 +54,7 @@ impl traits::Op for TextToEmoji {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let name: &str = args.get(0)?.try_into()?;
         Ok(Self::function_for_chars(name, 0)?.into())
     }

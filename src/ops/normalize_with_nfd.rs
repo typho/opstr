@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -22,7 +22,7 @@ impl traits::Op for NormalizeWithNFD {
     fn description() -> &'static str { "NFD-normalize Unicode string #1 which applies canonical decomposition (c.f. UAX #15)" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         Ok(if unicode_normalization::is_nfd(text) {
             0.21
@@ -31,7 +31,7 @@ impl traits::Op for NormalizeWithNFD {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         Ok(Self::function_for_chars(text).into())
     }

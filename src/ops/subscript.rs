@@ -1,5 +1,5 @@
 use crate::auxiliary;
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -70,7 +70,6 @@ impl Subscript {
     }
     
     fn apply_replacements(text: &str) -> String {
-        let mut score = 0.5f32;
         let mut subscript_string = String::new();
     
         for chr in text.chars() {
@@ -95,7 +94,7 @@ impl traits::Op for Subscript {
     fn description() -> &'static str { "return the subscript version of the provided string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let sub: &str = &Self::apply_replacements(text);
         let diff = auxiliary::count_different_codepoints_of_shorter_string(text, sub);
@@ -107,7 +106,7 @@ impl traits::Op for Subscript {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         Ok(Self::apply_replacements(text).into())
     }

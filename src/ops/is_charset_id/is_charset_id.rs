@@ -2,7 +2,7 @@
 //  URL: https://www.iana.org/assignments/character-sets/character-sets-1.csv
 //  MD5sum: 5afe8dbdee2e83301f2b756467a2c8d4
 
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -87,7 +87,7 @@ impl traits::Op for IsCharsetID {
     fn description() -> &'static str { "is the given name argument #1 a valid charset identifier?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let candidate: &str = args.get(0)?.try_into()?;
 
         Ok(match Self::lookup(candidate) {
@@ -103,7 +103,7 @@ impl traits::Op for IsCharsetID {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let candidate: &str = args.get(0)?.try_into()?;
 
         match Self::lookup(candidate) {

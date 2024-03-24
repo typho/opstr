@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -15,9 +15,9 @@ use rt_format::argument::FormatArgument;
 pub struct Format {}
 
 impl Format {
-    fn function_for_chars(args: &[&str]) -> Result<String, Errors> {
+    fn function_for_chars(args: &[&str]) -> Result<String, LibError> {
         match args.len() {
-            0 => Err(Errors::ArgumentCountError(Self::acceptable_number_of_arguments(), 0, None)),
+            0 => Err(LibError::ArgumentCountError(Self::acceptable_number_of_arguments(), 0, None)),
             1 => Ok(args[0].into()),
             _ => {
                 let template: &str = args[0];
@@ -33,7 +33,7 @@ impl Format {
 
                 let repr = match ParsedFormat::parse(template, &fmt_args, &rt_format::NoNamedArguments) {
                     Ok(val) => val.to_string(),
-                    Err(failing_pos) => return Err(Errors::ArgValueError(0, format!("format string is invalid at zero-based position {}", failing_pos))),
+                    Err(failing_pos) => return Err(LibError::ArgValueError(0, format!("format string is invalid at zero-based position {}", failing_pos))),
                 };
 
                 Ok(repr)
@@ -48,7 +48,7 @@ impl traits::Op for Format {
     fn description() -> &'static str { "replace {placeholders} in string #1 with consecutive arguments #2, #3, …" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let template: &str = args.get(0)?.try_into()?;
         let occurences_start = template.matches('{').count().max(5);
         let occurences_end = template.matches('}').count().max(5);
@@ -65,7 +65,7 @@ impl traits::Op for Format {
         Ok(score)
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         match args.len() {
             0 => Ok("".into()),
             1 => {

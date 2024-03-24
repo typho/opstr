@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -12,11 +12,11 @@ impl traits::Op for IsContained {
     fn description() -> &'static str { "does string #1 contain string #2?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(_args: &Args) -> Result<f32, Errors> {
+    fn priority(_args: &Args) -> Result<f32, LibError> {
         Ok(0.564)
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let s1: &str = args.get(0)?.try_into()?;
         let s2: &str = args.get(1)?.try_into()?;
         Ok(s1.contains(s2).into())

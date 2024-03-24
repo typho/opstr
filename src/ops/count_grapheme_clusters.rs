@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output, OutputValue};
@@ -14,12 +14,12 @@ impl traits::Op for CountGraphemeClusters {
     fn description() -> &'static str { "return number of “Grapheme clusters” in string #1 according to Unicode Standard Annex 29 “Unicode Text Segmentation”" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         Ok(if string.len() >= 20 { 0.512 } else { 0.08 })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let count = UnicodeSegmentation::graphemes(string, true).map(OutputValue::from_str).count();
         Ok(count.into())

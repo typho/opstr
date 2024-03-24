@@ -1,5 +1,5 @@
 use crate::auxiliary;
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::{Output, OutputValue};
@@ -16,7 +16,7 @@ impl traits::Op for CodepointFrequency {
     fn description() -> &'static str { "return the frequency analysis per codepoint of string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         Ok(if 10 <= string.len() && string.len() <= 50 {
             0.67
@@ -25,7 +25,7 @@ impl traits::Op for CodepointFrequency {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let codepoint_names = auxiliary::unicode_codepoint_names_lookup(&string.chars().collect::<Vec<char>>());
         let total_count = string.chars().count();

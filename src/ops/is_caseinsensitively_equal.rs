@@ -1,6 +1,6 @@
 // use std::ascii::AsciiExt; // TODO would AsciiExt help us?
 
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -14,7 +14,7 @@ impl traits::Op for IsCaseinsensitivelyEqual {
     fn description() -> &'static str { "do all Unicode strings have the same byte sequence after ASCII lowercasing?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let mut eq = true;
         let str1: &str = args.get(0)?.try_into()?;
         let s1 = str1.to_ascii_lowercase();
@@ -29,7 +29,7 @@ impl traits::Op for IsCaseinsensitivelyEqual {
         Ok(if eq { 0.64 } else { 0.52 })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let mut eq = true;
         let str1: &str = args.get(0)?.try_into()?;
         let s1 = str1.to_ascii_lowercase();

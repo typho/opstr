@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -48,11 +48,9 @@ impl traits::Op for LevenstheinDistance {
     fn description() -> &'static str { "levensthein distance between strings #1 and #2" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
-        Ok(0.473)
-    }
+    fn priority(_args: &Args) -> Result<f32, LibError> { Ok(0.473) }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let s1: &str = args.get(0)?.try_into()?;
         let s2: &str = args.get(1)?.try_into()?;
 

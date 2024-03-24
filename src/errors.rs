@@ -1,11 +1,14 @@
+//! Error representation
+
 use std::fmt;
 use std::io;
 
 use crate::range::Range;
 
-// TODO: rename to "LibErrors"?
+/// `LibError` represents one of all possible error cases possible to occur in this library
+#[non_exhaustive]
 #[derive(Debug, Clone)]
-pub enum Errors {
+pub enum LibError {
     /// A value error for a CLI argument, e.g. "--radix" receives a negative number;
     /// specified by (CLI argument name, error message)
     CLIValueError(&'static str, String),
@@ -32,13 +35,13 @@ pub enum Errors {
 }
 
 
-impl From<io::Error> for Errors {
+impl From<io::Error> for LibError {
     fn from(err: io::Error) -> Self {
-        Errors::IOError(err.to_string())
+        LibError::IOError(err.to_string())
     }
 }
 
-impl fmt::Display for Errors {
+impl fmt::Display for LibError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::CLIValueError(name, errmsg) => write!(f, "invalid CLI argument for '--{}': {}", name, errmsg),

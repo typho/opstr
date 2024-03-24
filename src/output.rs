@@ -3,11 +3,13 @@
 
 use crate::config::Configuration;
 use crate::config::Syntax;
-use crate::errors::Errors;
+use crate::errors::LibError;
 
 use std::collections;
 use std::io;
 
+/// A scalar value in the result of the operation
+#[non_exhaustive]
 #[derive(Clone, Debug, Hash, PartialEq)]
 pub enum OutputValue {
     Bool(bool),
@@ -19,11 +21,10 @@ pub enum OutputValue {
 
 impl Eq for OutputValue {}
 
-// TODO: how debug messages for stderr?
-
 impl OutputValue {
+    /// Provide a string representation of the type in the syntax specified in `Configuration`
     pub(crate) fn typename(&self, conf: &Configuration) -> &'static str {
-        self.represent_value_type(conf.output_syntax)
+        self.represent_value_type(conf.syntax)
     }
 
     /// Create an `OutputValue` element from the provided string
@@ -90,8 +91,9 @@ impl OutputValue {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn represent(&self, conf: &Configuration) -> String {
-        match conf.output_syntax {
+        match conf.syntax {
             Syntax::C | Syntax::Cpp => self.represent_c_cpp(conf),
             Syntax::Golang => self.represent_golang(conf),
             Syntax::Human => self.represent_human(conf),
@@ -99,14 +101,13 @@ impl OutputValue {
             Syntax::Kotlin => self.represent_kotlin(conf),
             Syntax::Python => self.represent_python(conf),
             Syntax::Rust => self.represent_rust(conf),
-            _ => "value-of-unsupported-type".to_owned(),
         }
     }
 
     pub fn represent_c_cpp(&self, conf: &Configuration) -> String {
         match self {
             OutputValue::Bool(b) => {
-                match conf.output_syntax {
+                match conf.syntax {
                     Syntax::C => String::from(if *b { "1" } else { "0" }),
                     _ => String::from(if *b { "true" } else { "false" })
                 }
@@ -328,6 +329,8 @@ impl OutputValue {
     }
 }
 
+/// Output is the result of an operation ready for user-friendly representation through the `print` method
+#[non_exhaustive]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Output {
     Scalar{ data: OutputValue, notes: Vec<String> },
@@ -336,6 +339,7 @@ pub enum Output {
     /// A list where the items likely have different OutputValue types (e.g. Int and Bool)
     HeterogeneousList{ data: Vec<OutputValue>, notes: Vec<String> },
     /// Associates a key to a value
+    /// TODO: redefine as Vec<(OutputValue, OutputValue)> to allow ordered entries
     Association{ data: collections::HashMap<OutputValue, OutputValue>, notes: Vec<String> },
     /// Creates a table.
     /// ASSUME: for every row in data { assert!(len(row) == len(column_headers)); }
@@ -344,10 +348,10 @@ pub enum Output {
 
 impl Eq for Output {}
 
-type Err = Result<(), Errors>;
+type Err = Result<(), LibError>;
 
-fn io2errs(e: io::Error) -> Errors {
-    <std::io::Error as Into<Errors>>::into(e)
+fn io2errs(e: io::Error) -> LibError {
+    <std::io::Error as Into<LibError>>::into(e)
 }
 
 impl Output {
@@ -375,7 +379,8 @@ impl Output {
 
     /// Attach an additional note to this output
     /// (warning/imprecision note/configuration insufficiencies/…)
-    pub(crate) fn add_note(&mut self, note: &str) {
+    #[allow(dead_code)]
+    pub fn add_note(&mut self, note: &str) {
         match self {
             Output::Scalar { notes, .. } |
             Output::HomogeneousList { notes, .. } |
@@ -439,6 +444,10 @@ impl Output {
         }
     }
 
+    /// Represent this `Output` in stdout & stderr.
+    ///
+    /// NOTE: Sadly, I could not implement this as part of some `fmt` trait, because
+    /// library `termcolor` needs to write to stdout/stderr directly.
     pub fn print(&self, conf: &Configuration) -> Err {
         if let Some(idx) = conf.item {
             if let Some(col) = &conf.column {
@@ -571,7 +580,8 @@ impl Output {
             }
         }
 
-        match conf.output_syntax {
+        // TODO provide variable name argument to `print_` functions
+        match conf.syntax {
             Syntax::C | Syntax::Cpp => self.print_c_cpp(conf),
             Syntax::Golang => self.print_golang(conf),
             Syntax::Human => self.print_human(conf),
@@ -584,7 +594,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_c_cpp(&self, conf: &Configuration) -> Err {
+    fn print_c_cpp(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -705,7 +715,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_golang(&self, conf: &Configuration) -> Err {
+    fn print_golang(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -821,7 +831,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_human(&self, conf: &Configuration) -> Err {
+    fn print_human(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -917,7 +927,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_java(&self, conf: &Configuration) -> Err {
+    fn print_java(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -1062,7 +1072,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_kotlin(&self, conf: &Configuration) -> Err {
+    fn print_kotlin(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -1177,7 +1187,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_python(&self, conf: &Configuration) -> Err {
+    fn print_python(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
 
         match self {
@@ -1258,7 +1268,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn print_rust(&self, conf: &Configuration) -> Err {
+    fn print_rust(&self, conf: &Configuration) -> Err {
         let col = conf.color_scheme;
         let repr_val = |val: &OutputValue| {
             match val {

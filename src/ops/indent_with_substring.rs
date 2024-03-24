@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -12,7 +12,7 @@ impl traits::Op for IndentWithSubstring {
     fn description() -> &'static str { "concatenate string #2 with every non-empty line in string #1, keep other lines" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let indentation: &str = args.get(1)?.try_into()?;
 
@@ -21,7 +21,7 @@ impl traits::Op for IndentWithSubstring {
         Ok(prio1 * prio2)
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let indentation: &str = args.get(1)?.try_into()?;
 

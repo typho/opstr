@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -18,7 +18,7 @@ impl traits::Op for StripWhitespacesAtEnd {
     fn description() -> &'static str { "strip whitespaces from end of string" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(if s == s.trim_end() {
             0.24
@@ -27,7 +27,7 @@ impl traits::Op for StripWhitespacesAtEnd {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let a: &str = args.get(0)?.try_into()?;
         Ok(Self::function_for_chars(a).into())
     }

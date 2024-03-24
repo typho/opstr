@@ -1,14 +1,31 @@
-//! The idea of this library is to implement the utilities for the CLI tool.
-//! Specifically, we take `String`s (common) or bytes (for usecases like non-UTF8 strings) as input.
-//! Then we check which of all operations make sense for the given number of arguments.
-//! We process them to the best of our knowledge and then generate an `Output` instance,
-//! which might be as simple as a `String`, but can also be a description list (= dictionary).
-//! The output at the CLI is always written as UTF-8.
-//! The idea is that this result is then represented in various ways convenient for the user.
-//! Furthermore the operations also return a priority score. It defines how much sense this request
-//! made. A priority of 1.0 will push the result to the bottom (“likely what you looked for”).
-//! A priority of almost 0.0 will push the result to the top (“unlikely helpful”). Results with
-//! scores 0.0 will be immediately discarded.
+//! opstr is a library to apply operations to strings.
+//! 
+//! ## Objects
+//! 
+//! * `Configuration` represents how the output shall be represented and which locale shall be used for Unicode operations.
+//! * `LibError` is an `enum` of all possible error types that can occur
+//! * `Arg` represents one input argument (final content, in the case of stdin/file). `Args` is a sequence of them.
+//! 
+//! ## Concepts
+//! 
+//! * Operations provide a *priority*. A priority defines how much sense this request made.
+//!   A priority of 1.0 means “very likely what you looked for” (on the CLI, the result will be shown on the bottom).
+//!   A priority close to 0.0 means “unlikely helpful” (on the CLI, the result will be printed out first).
+//!   Results with priority 0.0 make no sense and will be discarded immediately.
+//! 
+//! ## API
+//! 
+//! * `list_all_ops` returns the list of supported operations
+//! * `list_matching_ops` returns the list of possible operations for the provided arguments
+//! * `matcher::run_op` returns the `Output` after running the one operation specified
+//! * `matcher::run_matching_ops` runs all operations appropriate for the provided arguments and writes the result to stdout & stderr
+//! 
+//! ## Notes
+//! 
+//! 1. The CLI output is always valid UTF-8. This might change in the future, but in the current release, this is the case.
+//! 2. `Arg` is either Unicode content (`Chars`) or an arbitrary byte sequence (`Bytes`). `Bytes` is not yet supported.
+//! 3. `Output` abstracts the type of result of an operation.
+//! 4. `Configuration.syntax` defines which formal grammar shall be used for representation. The default representation for humans does not have a specification.
 
 pub(crate) mod auxiliary;
 pub(crate) mod config;
@@ -20,9 +37,10 @@ pub(crate) mod range;
 pub(crate) mod output;
 
 pub use config::Configuration;
-pub use errors::Errors;
+pub use errors::LibError;
 pub use input::{Arg, Args};
+pub use output::Output;
 pub use matcher::list_all_ops;
 pub use matcher::list_matching_ops;
 pub use matcher::run_op;
-pub use matcher::run_unspecified_op;
+pub use matcher::run_matching_ops;

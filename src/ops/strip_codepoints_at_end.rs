@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -12,7 +12,7 @@ impl traits::Op for StripCodepointsAtEnd {
     fn description() -> &'static str { "strip codepoints found in string #2 from end of string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let set: &str = args.get(1)?.try_into()?;
         Ok(if !set.is_empty() && set.len() <= 3 {
             0.41
@@ -21,7 +21,7 @@ impl traits::Op for StripCodepointsAtEnd {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         let set: &str = args.get(1)?.try_into()?;
 

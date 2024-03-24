@@ -1,4 +1,4 @@
-use crate::errors::Errors;
+use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
@@ -7,17 +7,17 @@ use crate::range;
 pub struct Repeat {}
 
 impl Repeat {
-    fn implementation(arg: &str, count: i64, count_arg_id: usize) -> Result<Output, Errors> {
+    fn implementation(arg: &str, count: i64, count_arg_id: usize) -> Result<Output, LibError> {
         if count < 0 {
-            return Err(Errors::ArgValueError(count_arg_id, format!("cannot repeat {} (negative) times - nonnegative integer required", count)));
+            return Err(LibError::ArgValueError(count_arg_id, format!("cannot repeat {} (negative) times - nonnegative integer required", count)));
         }
         if count > u16::MAX as i64 {
-            return Err(Errors::ArgValueError(count_arg_id, "count argument is too large".to_owned()));
+            return Err(LibError::ArgValueError(count_arg_id, "count argument is too large".to_owned()));
         }
 
         let limit = 65_535i64.saturating_div(arg.chars().count() as i64);
         if count > limit {
-            return Err(Errors::ArgValueError(count_arg_id, format!("repeated string exceeds length limit {}", limit)))
+            return Err(LibError::ArgValueError(count_arg_id, format!("repeated string exceeds length limit {}", limit)))
         }
 
         Ok(arg.repeat(count as usize).into())
@@ -47,7 +47,7 @@ impl traits::Op for Repeat {
     fn description() -> &'static str { "repeat string #1 several (integer #2) times" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, Errors> {
+    fn priority(args: &Args) -> Result<f32, LibError> {
         let argument1: &str = args.get(0)?.try_into()?;
         let argument2: &str = args.get(1)?.try_into()?;
 
@@ -62,7 +62,7 @@ impl traits::Op for Repeat {
         Ok(0.0)
     }
 
-    fn run(args: &Args) -> Result<Output, Errors> {
+    fn run(args: &Args) -> Result<Output, LibError> {
         let argument1: &str = args.get(0)?.try_into()?;
         let argument2: &str = args.get(1)?.try_into()?;
 
@@ -76,6 +76,6 @@ impl traits::Op for Repeat {
             return Self::implementation(argument2, count, 0);
         }
 
-        Err(Errors::ArgTypeError(1, "second argument must specify how often the first argument shall be repeated".to_owned()))
+        Err(LibError::ArgTypeError(1, "second argument must specify how often the first argument shall be repeated".to_owned()))
     }
 }

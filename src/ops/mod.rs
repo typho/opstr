@@ -196,8 +196,8 @@ type FnName = fn () -> &'static str;
 type FnDesc = fn () -> &'static str;
 type FnUse = fn () -> &'static str;
 type FnNum = fn () -> range::Range;
-type FnPriority = fn (args: &input::Args) -> Result<f32, errors::Errors>;
-type Fn = fn (args: &input::Args) -> Result<output::Output, errors::Errors>;
+type FnPriority = fn (args: &input::Args) -> Result<f32, errors::LibError>;
+type Fn = fn (args: &input::Args) -> Result<output::Output, errors::LibError>;
 
 pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Base64Decode),
