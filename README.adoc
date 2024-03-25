@@ -29,10 +29,10 @@ Anyone working with text strings (in the Unicode sense: as sequence of codepoint
 How to install
 --------------
 
-Install me via crates.io:
+Install me via crates.io (TODO not yet!):
 
 [source]
-opstr = "0.6.0"
+opstr = "1.0"
 
 How to run
 ----------
@@ -49,11 +49,10 @@ Adding your own function
 
 If you have a new function to implement …
 
-1. Decide the CATEGORY it fits into (e.g. "charsets")
-2. Decide upon a function NAME
-3. Create the file src/ops/CATEGORY/NAME.rs
+1. Decide upon a function NAME
+2. Create the file src/ops/NAME.rs (with underscores instead of hyphens in the basename)
 4. Add the function to src/ops/mod.rs
-5. The file must implement the function with one of the traits from src/ops/traits.rs
+5. The file must implement the [Op trait](src/ops/traits.rs)
 
 Compatibility guarantees
 ------------------------
@@ -67,8 +66,8 @@ Release management
 
 What to pay attention to before creating a new release:
 
-1. Update [UnicodeData](https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt)
-2. Update [SpecialCasing](https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt)
+1. Update link:https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt[UnicodeData]
+2. Update link:https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt[SpecialCasing]
 3. Review which crate versions to update
 4. verify whether you plan a major/minor/patch release
 5. update the version number in README.adoc and main.rs
