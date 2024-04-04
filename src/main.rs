@@ -37,7 +37,7 @@ struct Opts {
     hex_upper: Option<bool>,
     #[clap(long, help = "radix {2, 10, or 16} to use for integers")]
     radix: Option<u8>,
-    #[clap(long, help = "if a list of elements/table is returned, return the {item}-th element/row, else ignore this option")]
+    #[clap(long, help = "if a list of elements/table is returned, return the zero-based {item}-th element/row, else ignore this option")]
     item: Option<isize>,
     #[clap(long, help = "if an association/table is returned, return key `column` or only column name `column`, else ignore this option")]
     column: Option<String>,
