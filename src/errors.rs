@@ -5,6 +5,9 @@ use std::io;
 
 use crate::range::Range;
 
+use icu::locid;
+use icu_provider;
+
 /// `LibError` represents one of all possible error cases possible to occur in this library
 #[non_exhaustive]
 #[derive(Debug, Clone)]
@@ -32,8 +35,33 @@ pub enum LibError {
     InvalidData(String),
     /// internal error related to I/O; specified by an error message.
     IOError(String),
+    /// The locale is not properly set up. A common case is that the locale data file
+    /// does not contain necessary data to run the requested operation;
+    /// specified by an error message.
+    LocaleError(String),
 }
 
+impl From<locid::ParserError> for LibError {
+    fn from(err: locid::ParserError) -> Self {
+        let mut msg = String::from("ICU parsing error: ");
+        msg.push_str(&err.to_string());
+        LibError::IOError(msg)
+    }
+}
+
+impl From<icu_provider::DataError> for LibError {
+    fn from(err: icu_provider::DataError) -> Self {
+        let mut msg = String::from("provided ICU data invalid: ");
+        msg.push_str(&err.to_string());
+        LibError::LocaleError(msg)
+    }
+}
+
+impl From<icu::collator::CollatorError> for LibError {
+    fn from(err: icu::collator::CollatorError) -> Self {
+        LibError::IOError(err.to_string())
+    }
+}
 
 impl From<io::Error> for LibError {
     fn from(err: io::Error) -> Self {
@@ -53,8 +81,9 @@ impl fmt::Display for LibError {
                 None => write!(f, "invalid number of CLI arguments, expected {} got {}", expected, actual),
             },
             Self::UnknownOp(op) => write!(f, "unknown operation '{}'", op),
-            Self::InvalidData(msg) => write!(f, "internal data error: '{}'", msg),
-            Self::IOError(msg) => write!(f, "I/O error: '{}'", msg),
+            Self::InvalidData(msg) => write!(f, "internal data error: {}", msg),
+            Self::IOError(msg) => write!(f, "I/O error: {}", msg),
+            Self::LocaleError(msg) => write!(f, "error using the locale: {}", msg),
         }
     }
 }

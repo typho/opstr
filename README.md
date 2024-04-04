@@ -58,6 +58,7 @@ What to pay attention to before creating a new release:
 
 1. Update [UnicodeData](https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt)
 2. Update [SpecialCasing](https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt)
+3. [Regenerate CLDR data](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) with `icu4x-datagen -W -o data/icu4x.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
 3. Review which crate versions to update
 4. verify whether you plan a major/minor/patch release
 5. update the version number in README.adoc and main.rs

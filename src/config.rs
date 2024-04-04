@@ -6,7 +6,11 @@ use std::fmt;
 use std::io;
 
 use std::io::Write;
+
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
+#[cfg(feature = "icu")]
+use icu::locid::Locale;
 
 /// Global application settings (mainly to configure representation)
 #[non_exhaustive]
@@ -31,7 +35,10 @@ pub struct Configuration {
     pub column: Option<String>,
     /// The locale to be used for locale-dependent operations.
     /// Default: 'en-US'.
-    pub locale: String,
+    #[cfg(feature = "icu")]
+    pub locale: Option<Locale>,
+    #[cfg(not(feature = "icu"))]
+    pub locale: Option<()>,
     /// We can make opstr represent results for a specific syntax
     /// (mainly programming languages, like 'Go' or 'python'),
     /// but the default is a human-readable version.
@@ -47,7 +54,7 @@ impl default::Default for Configuration {
             color_scheme: ColorScheme::default(),
             item: None,
             column: None,
-            locale: String::from("en-US"),
+            locale: None,
             syntax: Syntax::Human,
         }
     }
@@ -85,9 +92,7 @@ impl Configuration {
         }
 
         if let Some(locale) = in_locale {
-            // NOTE: there is no trivial locale verification algorithm
-            // I expect some failure during the operation later, if the locale is invalid, but must be provided.
-            self.locale = locale;
+            self.locale = Self::evaluate_locale(locale)?;
         }
 
         if let Some(syntax) = out_syntax {
@@ -121,7 +126,7 @@ impl Configuration {
             }
         }
 
-        if let Ok(val) = env::var("OPSTR_ALPHA_UPPER") {
+        if let Ok(val) = env::var("OPSTR_HEX_UPPER") {
             self.alpha_upper = match val.to_lowercase().as_str() {
                 "yes" | "1" | "y" | "true" => true,
                 _ => false,
@@ -138,7 +143,7 @@ impl Configuration {
         if let Ok(val) = env::var("OPSTR_LOCALE") {
             // NOTE: there is no trivial locale verification algorithm
             // I expect some failure during the operation later, if the locale is invalid, but must be provided.
-            self.locale = val;
+            self.locale = Some(val.parse()?);
         }
 
         if let Ok(val) = env::var("OPSTR_SYNTAX") {
@@ -156,6 +161,16 @@ impl Configuration {
         }
 
         Ok(())
+    }
+
+    #[cfg(feature = "icu")]
+    fn evaluate_locale(locale: String) -> Result<Option<Locale>, LibError> {
+        Ok(Some(locale.parse()?))
+    }
+
+    #[cfg(not(feature = "icu"))]
+    fn evaluate_locale(locale: String) -> Result<Option<()>, LibError> {
+        Err(LibError::CLIValueError("locale", "this executable was compiled without 'icu' support and therefore no locale support".to_string()))
     }
 }
 
