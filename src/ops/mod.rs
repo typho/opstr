@@ -1,3 +1,5 @@
+use crate::Configuration;
+
 macro_rules! spec {
     ($s:ident) => { ($s::name, $s::description, $s::usage, $s::acceptable_number_of_arguments, $s::priority, $s::run) };
 }
@@ -61,6 +63,7 @@ mod sentence_clusters;
 mod skip_prefix;
 mod skip_suffix;
 mod similarity;
+mod sort;
 mod split;
 mod split_by_whitespaces;
 mod split_by_whitespaces_limited_at_end;
@@ -148,6 +151,7 @@ pub(crate) use sentence_clusters::SentenceClusters;
 pub(crate) use similarity::Similarity;
 pub(crate) use skip_prefix::SkipPrefix;
 pub(crate) use skip_suffix::SkipSuffix;
+pub(crate) use sort::Sort;
 pub(crate) use split::Split;
 pub(crate) use split_by_whitespaces::SplitByWhitespaces;
 pub(crate) use split_by_whitespaces_limited_at_start::SplitByWhitespacesLimitedAtStart;
@@ -196,8 +200,8 @@ type FnName = fn () -> &'static str;
 type FnDesc = fn () -> &'static str;
 type FnUse = fn () -> &'static str;
 type FnNum = fn () -> range::Range;
-type FnPriority = fn (args: &input::Args) -> Result<f32, errors::LibError>;
-type Fn = fn (args: &input::Args) -> Result<output::Output, errors::LibError>;
+type FnPriority = fn (args: &input::Args, conf: &Configuration) -> Result<f32, errors::LibError>;
+type Fn = fn (args: &input::Args, conf: &Configuration) -> Result<output::Output, errors::LibError>;
 
 pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Base64Decode),
@@ -257,6 +261,7 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Similarity),
     spec!(SkipPrefix),
     spec!(SkipSuffix),
+    spec!(Sort),
     spec!(Split),
     spec!(SplitByWhitespaces),
     spec!(SplitByWhitespacesLimitedAtStart),

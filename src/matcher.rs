@@ -25,7 +25,7 @@ pub fn list_all_ops(_conf: &Configuration) -> Output {
 }
 
 /// Return the ordered list of appropriate operations as `Output::Association` of (name, description) entries.
-pub fn list_matching_ops(_conf: &Configuration, args: &input::Args) -> Vec<(&'static str, &'static str)> {
+pub fn list_matching_ops(conf: &Configuration, args: &input::Args) -> Vec<(&'static str, &'static str)> {
     let mut fns = vec![];
 
     for (fn_name, fn_desc, _fn_usage, fn_args, fn_priority, _fn_impl) in ops::INDEX {
@@ -35,7 +35,7 @@ pub fn list_matching_ops(_conf: &Configuration, args: &input::Args) -> Vec<(&'st
             continue;
         }
         // CONSTRAINT: priority must be greater 0
-        if let Ok(prio) = fn_priority(args) {
+        if let Ok(prio) = fn_priority(args, conf) {
             if prio > 0.0 && !prio.is_nan() {
                 fns.push((fn_name(), fn_desc(), prio));
             }
@@ -89,12 +89,12 @@ fn find_op_by_exact_name(_conf: &Configuration, _args: &input::Args, op_name: &s
     None
 }
 
-fn run_op_by_name(_conf: &Configuration, args: &input::Args, op_name: &str) -> Result<Output, LibError> {
+fn run_op_by_name(conf: &Configuration, args: &input::Args, op_name: &str) -> Result<Output, LibError> {
     for (fn_name, _fn_desc, _fn_usage, _fn_args, _fn_priority, fn_impl) in ops::INDEX {
         if fn_name() != op_name {
             continue;
         }
-        return fn_impl(args);
+        return fn_impl(args, conf);
     }
 
     Err(LibError::UnknownOp(op_name.to_owned()))
@@ -108,7 +108,7 @@ pub fn run_matching_ops(conf: &Configuration, args: &input::Args) -> Result<(), 
     // NOTE: INDEX_MULTI must always be run, independent of the number of arguments
     for (fn_name, _fn_desc, _fn_usage, _fn_args, fn_priority, _fn_impl) in ops::INDEX {
         let name: &'static str = fn_name();
-        if let Ok(prio) = fn_priority(args) {
+        if let Ok(prio) = fn_priority(args, conf) {
             if prio > 0.0 && !prio.is_nan() {
                 priority_per_function.push((name, prio));
             }
@@ -128,7 +128,7 @@ pub fn run_matching_ops(conf: &Configuration, args: &input::Args) -> Result<(), 
                 continue;
             }
 
-            match fn_impl(args) {
+            match fn_impl(args, conf) {
                 Ok(output) => { output.print(conf)?; },
                 Err(e) => {
                     conf.color_scheme.error_label("ERROR")?;

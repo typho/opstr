@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -29,7 +30,7 @@ impl traits::Op for HumanReadableBytes {
     fn description() -> &'static str { "represent integer #1 (as 1024-based count of bytes) in a human-readable manner likely with two decimal points" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let res: Result<i64, LibError> = args.get(0)?.try_into();
         Ok(match res {
             Ok(bytes_count) => {
@@ -43,7 +44,7 @@ impl traits::Op for HumanReadableBytes {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let bytes_count: i64 = args.get(0)?.try_into()?;
         Ok(Self::function_for_i64(bytes_count).into())
     }

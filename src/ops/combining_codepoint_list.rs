@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -26,9 +27,9 @@ impl traits::Op for CombiningCodepointList {
     fn description() -> &'static str { "list all codepoints with a combining property" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(0, 0) }
 
-    fn priority(_args: &Args) -> Result<f32, LibError> { Ok(0.01) }
+    fn priority(_args: &Args, _conf: &Configuration) -> Result<f32, LibError> { Ok(0.01) }
 
-    fn run(_args: &Args) -> Result<Output, LibError> {
+    fn run(_args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let s = |s: &str| { OutputValue::SingleLineText(s.to_owned()) };
         let data = vec![
             vec![s("U+0300"), s("COMBINING GRAVE ACCENT")],

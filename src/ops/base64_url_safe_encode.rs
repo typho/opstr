@@ -1,11 +1,13 @@
-use base64;
-use base64::{Engine as _, engine::general_purpose as base64_engine};
-
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
 use crate::range;
+
+use base64;
+use base64::{Engine as _, engine::general_purpose as base64_engine};
+
 
 pub struct Base64UrlSafeEncode {}
 
@@ -25,7 +27,7 @@ impl traits::Op for Base64UrlSafeEncode {
     fn description() -> &'static str { "base64 encoding of provided string #1 with URL-appropriate representation (c.f. RFC 3548)" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let base: &str = args.get(0)?.try_into()?;
         let length = base.chars().count();
 
@@ -36,7 +38,7 @@ impl traits::Op for Base64UrlSafeEncode {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let base: &str = args.get(0)?.try_into()?;
         Ok(Self::function_for_chars(base).into())
     }

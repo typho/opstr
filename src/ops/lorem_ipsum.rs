@@ -1,11 +1,12 @@
-use std::collections::HashMap;
-use std::time::SystemTime;
-
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
 use crate::range;
+
+use std::collections::HashMap;
+use std::time::SystemTime;
 
 // NOTE: these transition probabilities have been determined from some example Lorem Ipsum text.
 //       It is simply a bi-gram Markov chain. I decided to exclude any punctuation and whitespace.
@@ -194,7 +195,7 @@ impl traits::Op for LoremIpsum {
     fn description() -> &'static str { "generate (int #1) words of an Lorem Ipsum text" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         Ok(match string.parse::<i64>() {
             Ok(count) => {
@@ -208,7 +209,7 @@ impl traits::Op for LoremIpsum {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let words: &str = args.get(0)?.try_into()?;
         match words.parse::<i64>() {
             Ok(count_words) => Ok(Self::generate(count_words).into()),

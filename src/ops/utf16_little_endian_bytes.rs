@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for Utf16LittleEndianBytes {
     fn description() -> &'static str { "encode string #1 in UTF-16 and return its bytes in little endian order" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(if s.len() > 3 {
             0.86
@@ -21,7 +22,7 @@ impl traits::Op for Utf16LittleEndianBytes {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         let mut list = vec![];
         for two_bytes in s.encode_utf16() {

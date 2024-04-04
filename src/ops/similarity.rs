@@ -1,4 +1,5 @@
 use crate::auxiliary;
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -13,7 +14,7 @@ impl traits::Op for Similarity {
     fn description() -> &'static str { "indicate similarity (0 = not, 100 = equal) of two strings with a number between 0 and 100" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s1 = args.get(0)?.try_into()?;
         let s2 = args.get(1)?.try_into()?;
         let sim = auxiliary::string_similarity(s1, s2);
@@ -26,7 +27,7 @@ impl traits::Op for Similarity {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let s1 = args.get(0)?.try_into()?;
         let s2 = args.get(1)?.try_into()?;
         let sim = auxiliary::string_similarity(s1, s2);

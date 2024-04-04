@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for GuaranteePrefix {
     fn description() -> &'static str { "if string #1 does not start with string #2, prepend it" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let base: &str = args.get(0)?.try_into()?;
         let prefix: &str = args.get(0)?.try_into()?;
         Ok(if base.len() > prefix.len() {
@@ -22,7 +23,7 @@ impl traits::Op for GuaranteePrefix {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let base: &str = args.get(0)?.try_into()?;
         let prefix: &str = args.get(0)?.try_into()?;
         if base.starts_with(prefix) {

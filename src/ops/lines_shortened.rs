@@ -1,5 +1,6 @@
 // TODO review naming
 
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -75,7 +76,7 @@ impl traits::Op for LinesShortened {
     fn description() -> &'static str { "shorten lines in string #1, if necessary, not to exceed width #2" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let w: Result<i64, LibError> = args.get(1)?.try_into();
 
@@ -103,7 +104,7 @@ impl traits::Op for LinesShortened {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let w: Result<i64, LibError> = args.get(1)?.try_into();
 

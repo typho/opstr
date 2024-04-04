@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for IsEqual {
     fn description() -> &'static str { "do all Unicode strings have the same byte sequence?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let mut eq = true;
         let s1: &str = args.get(0)?.try_into()?;
 
@@ -26,7 +27,7 @@ impl traits::Op for IsEqual {
         Ok(if eq { 0.64 } else { 0.52 })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let mut eq = true;
         let s1: &str = args.get(0)?.try_into()?;
 

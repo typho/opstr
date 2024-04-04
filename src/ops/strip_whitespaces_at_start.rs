@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -18,7 +19,7 @@ impl traits::Op for StripWhitespacesAtStart {
     fn description() -> &'static str { "strip whitespaces from start of string" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(if s == s.trim_start() {
             0.24
@@ -27,7 +28,7 @@ impl traits::Op for StripWhitespacesAtStart {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(Self::function_for_chars(s).into())
     }

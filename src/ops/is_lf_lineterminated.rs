@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for IsLFLineTerminated {
     fn description() -> &'static str { "is U+000A LINE FEED the only character causing line breaks in string #1?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         Ok(if string.lines().count() > 1 {
             0.12
@@ -21,7 +22,7 @@ impl traits::Op for IsLFLineTerminated {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         // line break causing characters can be found in categories c.f. UAX #14 …
         //   BK    Mandatory Break   Cause a line break (after)
         //   CR    Carriage Return   Cause a line break (after), except between CR and LF

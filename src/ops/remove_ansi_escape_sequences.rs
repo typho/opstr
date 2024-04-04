@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -250,7 +251,7 @@ impl traits::Op for RemoveAnsiEscapeSequences {
     fn description() -> &'static str { "remove any ANSI X3.64 (also found in ECMA-48/ISO 6429) sequences in string #1 starting with U+001B ESCAPE" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         if s.contains(ESC) {
             Ok(0.493)
@@ -259,7 +260,7 @@ impl traits::Op for RemoveAnsiEscapeSequences {
         }
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let src: &str = args.get(0)?.try_into()?;
         let dst = Self::function_for_chars(src);
 

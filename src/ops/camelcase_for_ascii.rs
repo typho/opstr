@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for CamelcaseForAscii {
     fn description() -> &'static str { "turn #1 to lowercase and replace the ASCII character after ' ' or '_' sequences with an uppercase letter" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(if s.matches(' ').count() > 0 || s.matches('_').count() > 0 {
             0.58
@@ -21,7 +22,7 @@ impl traits::Op for CamelcaseForAscii {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let name: &str = args.get(0)?.try_into()?;
 
         let mut just_skipped = false;

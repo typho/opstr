@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -24,7 +25,7 @@ impl traits::Op for LengthMaximum {
     fn description() -> &'static str { "return the first string among the longest strings" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         Ok(if args.len() >= 3 {
             0.72
         } else {
@@ -32,7 +33,7 @@ impl traits::Op for LengthMaximum {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let mut arguments = vec![];
         for arg in args.iter() {
             let s: &str = arg.try_into()?;

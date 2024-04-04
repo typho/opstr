@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for XmlEncode {
     fn description() -> &'static str { "replace the 5 characters &<>\"' with their pre-defined XML entities in string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         Ok(if s.contains('&') || s.contains('<') || s.contains('>') || s.contains('"') || s.contains('\'') {
             0.43
@@ -21,7 +22,7 @@ impl traits::Op for XmlEncode {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let s: &str = args.get(0)?.try_into()?;
         let encoded = s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('\"', "&quot;").replace('\'', "&apos;");
         Ok(encoded.into())

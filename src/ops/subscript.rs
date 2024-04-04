@@ -1,4 +1,5 @@
 use crate::auxiliary;
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -94,7 +95,7 @@ impl traits::Op for Subscript {
     fn description() -> &'static str { "return the subscript version of the provided string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let sub: &str = &Self::apply_replacements(text);
         let diff = auxiliary::count_different_codepoints_of_shorter_string(text, sub);
@@ -106,7 +107,7 @@ impl traits::Op for Subscript {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         Ok(Self::apply_replacements(text).into())
     }

@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -47,7 +48,7 @@ impl traits::Op for Repeat {
     fn description() -> &'static str { "repeat string #1 several (integer #2) times" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let argument1: &str = args.get(0)?.try_into()?;
         let argument2: &str = args.get(1)?.try_into()?;
 
@@ -62,7 +63,7 @@ impl traits::Op for Repeat {
         Ok(0.0)
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let argument1: &str = args.get(0)?.try_into()?;
         let argument2: &str = args.get(1)?.try_into()?;
 

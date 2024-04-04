@@ -1,11 +1,12 @@
-use std::iter;
-use std::str;
-
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
 use crate::output::Output;
 use crate::range;
+
+use std::iter;
+use std::str;
 
 /// LinebreakOpportunities iterates over line breaking opportunities
 /// in a text. Thus, they emit a tuple (UTF-8 byte offset in the text,
@@ -159,7 +160,7 @@ impl traits::Op for LinebreakBefore {
     fn description() -> &'static str { "linebreak long lines in (text #1) before they reach (integer #2) codepoints" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let width: i64 = match args.get(1)?.try_into() {
             Ok(int) => int,
@@ -175,7 +176,7 @@ impl traits::Op for LinebreakBefore {
         } * lines_prio)
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let width: i64 = args.get(1)?.try_into()?;
 

@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -12,7 +13,7 @@ impl traits::Op for IsCRLFLineTerminated {
     fn description() -> &'static str { "is (U+000D CARRIAGE RETURN)(U+000A LINE FEED) the only sequence causing line breaks in string #1?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let string: &str = args.get(0)?.try_into()?;
         Ok(if string.lines().count() > 1 {
             0.11
@@ -21,7 +22,7 @@ impl traits::Op for IsCRLFLineTerminated {
         })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         // c.f. UAX #14 and is-lf-lineterminated
 
         let string: &str = args.get(0)?.try_into()?;

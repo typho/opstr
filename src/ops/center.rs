@@ -1,5 +1,6 @@
-use crate::errors::LibError;
+use crate::config::Configuration;
 use crate::input::{Arg,Args};
+use crate::errors::LibError;
 use crate::ops::traits;
 use crate::output::Output;
 use crate::range;
@@ -12,7 +13,7 @@ impl traits::Op for Center {
     fn description() -> &'static str { "put string #1 in the middle of string of width #2 (default 80) repeating char #3 (default #) on both sides" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 3) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let text: &str = args.get(0)?.try_into()?;
         let width: i64 = match args.get(1)?.try_into() {
             Ok(w) => w,
@@ -28,7 +29,7 @@ impl traits::Op for Center {
         Ok(score)
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let default_w = Arg::Chars("80".to_owned(), 1);
         let default_rep = Arg::Chars("#".to_owned(), 2);
 

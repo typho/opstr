@@ -1,12 +1,12 @@
-use std::fmt;
-
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
+use crate::ops::traits::Op;
 use crate::output::Output;
 use crate::range;
 
-use crate::ops::traits::Op;
+use std::fmt;
 
 use rt_format::ParsedFormat;
 use rt_format::Specifier;
@@ -48,7 +48,7 @@ impl traits::Op for Format {
     fn description() -> &'static str { "replace {placeholders} in string #1 with consecutive arguments #2, #3, …" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(1) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let template: &str = args.get(0)?.try_into()?;
         let occurences_start = template.matches('{').count().max(5);
         let occurences_end = template.matches('}').count().max(5);
@@ -65,7 +65,7 @@ impl traits::Op for Format {
         Ok(score)
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         match args.len() {
             0 => Ok("".into()),
             1 => {

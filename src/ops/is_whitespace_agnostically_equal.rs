@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -36,12 +37,12 @@ impl traits::Op for IsWhitespaceAgnosticallyEqual {
     fn description() -> &'static str { "are all strings equal if we ignore any whitespace characters?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexOpen(2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         if args.len() <= 1 { return Ok(0.0); }
         Ok(if Self::function_for_args(args)? { 0.41 } else { 0.25 })
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         Ok(Self::function_for_args(args)?.into())
     }
 }

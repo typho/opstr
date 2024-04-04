@@ -1,3 +1,4 @@
+use crate::config::Configuration;
 use crate::errors::LibError;
 use crate::input::Args;
 use crate::ops::traits;
@@ -28,7 +29,7 @@ impl traits::Op for IsPrefix {
     fn description() -> &'static str { "does string #1 start with string #2?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(2, 2) }
 
-    fn priority(args: &Args) -> Result<f32, LibError> {
+    fn priority(args: &Args, _conf: &Configuration) -> Result<f32, LibError> {
         let s1: &str = args.get(0)?.try_into()?;
         let s2: &str = args.get(1)?.try_into()?;
         if s1.len() < s2.len() {
@@ -44,7 +45,7 @@ impl traits::Op for IsPrefix {
         } * p)
     }
 
-    fn run(args: &Args) -> Result<Output, LibError> {
+    fn run(args: &Args, _conf: &Configuration) -> Result<Output, LibError> {
         let s1: &str = args.get(0)?.try_into()?;
         let s2: &str = args.get(1)?.try_into()?;
         Ok(Self::function_for_chars(s1, s2).into())
