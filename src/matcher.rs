@@ -102,12 +102,15 @@ fn run_op_by_name(conf: &Configuration, args: &input::Args, op_name: &str) -> Re
 
 /// Run all operations appropriate for the provided `Args`. Write the result to stdout & stderr, so we return `()`
 pub fn run_matching_ops(conf: &Configuration, args: &input::Args) -> Result<(), LibError> {
-    // (1) determine the set of functions returning priority > 0.0
+    // (1) determine the set of functions accepting this number of arguments and returning priority > 0.0
     let mut priority_per_function: Vec<(&'static str, f32)> = vec![];
 
     // NOTE: INDEX_MULTI must always be run, independent of the number of arguments
-    for (fn_name, _fn_desc, _fn_usage, _fn_args, fn_priority, _fn_impl) in ops::INDEX {
+    for (fn_name, _fn_desc, _fn_usage, fn_args, fn_priority, _fn_impl) in ops::INDEX {
         let name: &'static str = fn_name();
+        if !fn_args().has(args.len()) {
+            continue;
+        }
         if let Ok(prio) = fn_priority(args, conf) {
             if prio > 0.0 && !prio.is_nan() {
                 priority_per_function.push((name, prio));
