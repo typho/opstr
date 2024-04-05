@@ -37,6 +37,26 @@ opstr = "1.0"
 5. Add executable rights to the file of your platform
 6. Run the executable opstr on the command line
 
+## How to configure
+
+Please lists the help menu to see all options to configure `opstr`.
+Here I would like to mention that most options can also be provided as environment variable.
+Hence you can avoid to specify the option at every CLI call, but one set them once.
+The list of environment variables is:
+
+* `OPSTR_RADIX`: the radix used for integers printed out
+* `OPSTR_HEX_UPPER`: print hexadecimal alphabetic digits with uppercase letters, not lowercase letters
+* `OPSTR_COLOR_SCHEME`: the color scheme for the output
+* `OPSTR_LOCALE`: locale to use for locale-dependent operations (only `en-US` works per default)
+* `OPSTR_SYNTAX`: the output representation syntax to use
+
+Locales are tricky, because the executable would be impractically large if I ship all locales.
+Instead, you need to generate locale data yourself; compare with [icu4x data management](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) and replace `en-us` with your locale in this call:
+
+`icu4x-datagen -W -o data/icu4x_en-us.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
+
+The environment variable `OPSTR_LOCALE_DATAFILE` needs to point to the `.blob2` file to load and you need to specify the locale as CLI argument or enviroment variable to make it work properly. Since you might have a different path for every locale you specify, the string `{filepath}` inside the environment variable will be replaced by the specified locale.
+
 ## Adding your own function
 
 If you have a new function to implement …
@@ -48,9 +68,12 @@ If you have a new function to implement …
 
 ## Compatibility guarantees
 
-* We follow semver semantics: Breaking the API requires a major version update. Changing the behavior of functions or extending non-exhaustive API elements requires a minor version update. Security bugfixes or severe issues (if they can be fixed in a backwards-compatible manner) are fixed with a patch release.
-* The op names are fixed since the 1.0 release. The ops will never disappear. The ops will always implement what they describe.
-* The software license cannot change.
+We follow semver principles:
+
+* Breaking the API requires a major version update. Changing the behavior of functions or extending non-exhaustive API elements requires a minor version update. Security bugfixes or severe issues (if they can be fixed in a backwards-compatible manner) are fixed with a patch release.
+* The op names are fixed since the 1.0 release. The ops will never disappear. The ops will always implement what they describe. Requiring a different number of arguments or changing the arguments requires a major version update.
+* The ordering of the operations when no `--op` is specified (more specifically, the internal priority) only requires a patch release
+* The software license does not change.
 
 ## Release management
 
@@ -58,59 +81,10 @@ What to pay attention to before creating a new release:
 
 1. Update [UnicodeData](https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt)
 2. Update [SpecialCasing](https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt)
-3. [Regenerate CLDR data](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) with `icu4x-datagen -W -o data/icu4x.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
+3. [Regenerate CLDR data](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) with `icu4x-datagen -W -o data/icu4x_en-US.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
 3. Review which crate versions to update
 4. verify whether you plan a major/minor/patch release
 5. update the version number in README.adoc and main.rs
-
-## Future plans
-
-Until the 1.0 release, I want to …
-
-* CLI
-    * review that `--list-ops` w/ and w/o makes sense and whether the arguments react appropriately to existing arguments
-    * review naming scheme for functions, esp. locale-dependent versus ASCII, char versus codepoint, plural vs singular (e.g. whitespace[s])
-* ops concept
-    * icu4x dependency?
-    * introduce regex ops
-* ops
-    * review is-charset-id op
-    * implement function `combine`: e.g. ["combining", "strike-through", text] … (relation to function `combining-codepoint-list`?) … original spec: X: add X combiner to all codepoints where X in {bold, italic, cursive, sans-serif, strike-through, underline, slash-through, double-struck, monospace, Fraktur, upside-down, bubble text, square text, small-caps, fullwidth, zigzag-above, diamond-enclosed, redact, circle-backslash}, c.f. https://yaytext.com/square-text/
-    * op sort: Unicode locale-dependent sorting
-    * op sort-lexicographically: rather simple sorting with Unicode codepoints
-    * op cmp-lexicographic: lexicographic comparison of two strings
-    * op cmp of two strings (is cmp in rust lexicographic? if so, ignore this)
-    * op camelcase: locale-dependent casing Unicode operation
-    * op titlecase: locale-dependent casing Unicode operation
-    * op lowercase-localized: locale-dependent Unicode casing operation
-    * op uppercase-localized: locale-dependent Unicode casing operation
-    * op replace-limited-from-start, replace-limited-from-end
-    * op byte-index-of-first-occurence, byte-index-of-last-occurence
-    * op split-limited-from-start, split-limited-from-end, split-…-with-separator
-    * op split-lines-with-offsets: split_by_linebreaks but also return the UTF-8 indices where line breaks happened
-    * op split-with-offsets: split but also return the UTF-8 indices where line breaks happened
-    * op split-by-whitespaces: add inclusive versions which keep the separator in the elements?
-    * op whitespace-lines-to-empty: convert lines filled with only whitespace to empty lines
-    * op split-at-codepoint-index
-    * op slice lines by maximum length (1. find center by midpoint of first ANSI highlight and last clear, 2. find better center if length exceeds by midpoint of first highlight and first clear, 3. trim whitespace optionally to achieve length, 4. print characters around center, wrap by "[…] " and " […]")
-    * op lines: simply split into lines
-    * op per line: remove leading/trailing whitespace, add final empty line, merge multiple empty lines to one empty line
-    * op line-start-byte-indices: return the list of byte indices where a new line starts
-    * op line-at-line-number: filter lines by index: return the n-th line where n is in 1..infty
-    * op line-at-index: filter lines by index: return the n-th line where n can be pos, 0, or neg
-    * op lines-with-minimum-length (lines len): filter lines by minimum length
-    * op lines-with-maximum-length (lines len): filter lines by maximum length
-    * op lines-by-range (lines start end): returns lines with indices in zero-based inclusive-exclusive range
-    * op lines-by-linenumber-range (lines start end): returns lines with indices in one-based inclusive-inclusive range
-    * op list of writing systems
-    * op split-by-whitespace-nth: return the nth item of the list
-    * op take file content, apply delimiter e.g. "\n--\n" and return segments
-    * op take file content, fetch recursive structure e.g. "(" and ")" or "\begin{…}" and "\end{…}" and return segments
-    * op substring-byte-indices: return list of byte indices where a given substring occurs
-    * op substring-codepoint-indices: return list of codepoint indices where a given substring occurs
-    * op prefix-line-number (lines [opt. separator]): attach line number (or line number and separator) before each line
-    * op return lines N–M … so given line numbers, return the corresponding range of lines
-* final review of priorities
 
 ## Source Code
 
@@ -123,6 +97,7 @@ See [the LICENSE file](LICENSE) (Hint: MIT license).
 ## Changelog
 
 **0.7.0:** first public release <br/>
+**0.9.0:** final evaluation release <br/>
 **1.0.0:** uses Unicode Version 15.0, release with backwards compatibility guarantees
 
 ## Issues
