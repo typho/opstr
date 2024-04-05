@@ -16,8 +16,10 @@ jobs:
             archive: zip
           - target: x86_64-unknown-linux-musl
             archive: tar.gz tar.xz tar.zst
-          - target: x86_64-apple-darwin
-            archive: zip
+          ## 2024-04-05: had to exclude apple-darwin because of https://github.com/rust-build/rust-build.action/issues/88
+          ##   TODO re-enable once the build succeeds again
+          #- target: x86_64-apple-darwin
+          #  archive: zip
     steps:
       - uses: actions/checkout@v4.1.1
       - name: Compile and release
