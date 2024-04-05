@@ -10,7 +10,7 @@ mod base64_decode;
 mod base64_url_safe_decode;
 mod base64_encode;
 mod base64_url_safe_encode;
-mod camelcase_for_ascii;
+mod camelcase;
 mod center;
 mod codepoints_ustring_list;
 mod codepoints;
@@ -99,7 +99,7 @@ pub(crate) use base64_decode::Base64Decode;
 pub(crate) use base64_url_safe_decode::Base64UrlSafeDecode;
 pub(crate) use base64_encode::Base64Encode;
 pub(crate) use base64_url_safe_encode::Base64UrlSafeEncode;
-pub(crate) use camelcase_for_ascii::CamelcaseForAscii;
+pub(crate) use camelcase::Camelcase;
 pub(crate) use center::Center;
 pub(crate) use codepoints_ustring_list::CodepointsUstringList;
 pub(crate) use codepoints::Codepoints;
@@ -208,7 +208,7 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Base64UrlSafeDecode),
     spec!(Base64Encode),
     spec!(Base64UrlSafeEncode),
-    spec!(CamelcaseForAscii),
+    spec!(Camelcase),
     spec!(Center),
     spec!(CodepointsUstringList),
     spec!(CodepointFrequency),
