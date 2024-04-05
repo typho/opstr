@@ -64,6 +64,7 @@ mod skip_prefix;
 mod skip_suffix;
 mod similarity;
 mod sort;
+mod sort_lexicographically;
 mod split;
 mod split_by_whitespaces;
 mod split_by_whitespaces_limited_at_end;
@@ -152,6 +153,7 @@ pub(crate) use similarity::Similarity;
 pub(crate) use skip_prefix::SkipPrefix;
 pub(crate) use skip_suffix::SkipSuffix;
 pub(crate) use sort::Sort;
+pub(crate) use sort_lexicographically::SortLexicographically;
 pub(crate) use split::Split;
 pub(crate) use split_by_whitespaces::SplitByWhitespaces;
 pub(crate) use split_by_whitespaces_limited_at_start::SplitByWhitespacesLimitedAtStart;
@@ -262,6 +264,7 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(SkipPrefix),
     spec!(SkipSuffix),
     spec!(Sort),
+    spec!(SortLexicographically),
     spec!(Split),
     spec!(SplitByWhitespaces),
     spec!(SplitByWhitespacesLimitedAtStart),
