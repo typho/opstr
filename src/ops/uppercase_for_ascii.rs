@@ -14,7 +14,7 @@ impl UppercaseForAscii {
 }
 
 impl traits::Op for UppercaseForAscii {
-    fn name() -> &'static str { "ascii-uppercase" }
+    fn name() -> &'static str { "uppercase-for-ascii" }
     fn usage() -> &'static str { "<#1 string to-uppercase>" }
     fn description() -> &'static str { "get locale-independent/ASCII uppercase version of string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }

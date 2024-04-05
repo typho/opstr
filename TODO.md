@@ -1,9 +1,3 @@
-# Approach for Unicode/ASCII
-
-We have one generic name. If the user specifies a locale, we need to supply a correct Unicode-compatible result (maybe require a proper `OPSTR_LOCALE_DATAFILE`). If the user specifies no locale, we need to provide a best-effort Unicode-less alternative.
-
-We can also expose the Unicode-less algorithm as additional operation (e.g. `sort` versus `sort-lexicographically`), because a suffix like `lexicographically` indicates that the sorting algorithm does not need/consider Unicode.
-
 # CLI proposals
 
 * Option `--per-line-as-arg N`: run the operation for every line of the file mentioned in argument at index `N` and replace argument `N` with the line content, only works for ops with scalar output? Currently we don't have a concept to merge `Output` instances, so this is difficult to implement

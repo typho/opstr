@@ -14,7 +14,7 @@ mod camelcase;
 mod center;
 mod codepoints_ustring_list;
 mod codepoints;
-mod codepoint_frequency;
+mod codepoint_frequencies;
 mod codepoint_lookup;
 mod codepoint_names;
 mod combining_codepoint_list;
@@ -104,7 +104,7 @@ pub(crate) use camelcase::Camelcase;
 pub(crate) use center::Center;
 pub(crate) use codepoints_ustring_list::CodepointsUstringList;
 pub(crate) use codepoints::Codepoints;
-pub(crate) use codepoint_frequency::CodepointFrequency;
+pub(crate) use codepoint_frequencies::CodepointFrequencies;
 pub(crate) use codepoint_lookup::CodepointLookup;
 pub(crate) use codepoint_names::CodepointNames;
 pub(crate) use concatenate::Concatenate;
@@ -213,7 +213,7 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Camelcase),
     spec!(Center),
     spec!(CodepointsUstringList),
-    spec!(CodepointFrequency),
+    spec!(CodepointFrequencies),
     spec!(CodepointLookup),
     spec!(CodepointNames),
     spec!(Codepoints),

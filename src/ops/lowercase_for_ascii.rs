@@ -14,7 +14,7 @@ impl LowercaseForAscii {
 }
 
 impl traits::Op for LowercaseForAscii {
-    fn name() -> &'static str { "ascii-lowercase" }
+    fn name() -> &'static str { "lowercase-for-ascii" }
     fn usage() -> &'static str { "<#1 string to-convert>" }
     fn description() -> &'static str { "get locale-independent/ASCII lowercase version of string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }

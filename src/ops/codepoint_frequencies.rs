@@ -9,10 +9,10 @@ use crate::range;
 use std::cmp::Ordering;
 use std::collections;
 
-pub struct CodepointFrequency {}
+pub struct CodepointFrequencies {}
 
-impl traits::Op for CodepointFrequency {
-    fn name() -> &'static str { "codepoint-frequency" }
+impl traits::Op for CodepointFrequencies {
+    fn name() -> &'static str { "codepoint-frequencies" }
     fn usage() -> &'static str { "<#1 string to-analyze-statistically>" }
     fn description() -> &'static str { "return the frequency analysis per codepoint of string #1" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }

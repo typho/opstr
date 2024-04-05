@@ -11,6 +11,7 @@ But the operations are always the same and should be accessible with one CLI cal
 
 I built opstr, so you can throw a bunch of strings in and get the result of various operations out.
 Or you specify an operation and get a predictable result.
+It also simplifies to run string operations in your shell.
 
 ## Why should I use it?
 
@@ -18,14 +19,14 @@ To apply operations to strings.
 
 ## Who should use it?
 
-Anyone working with text strings (in the Unicode sense: as sequence of codepoints).
+Anyone working with text strings (in the Unicode sense, so as sequence of codepoints).
 
 ## How to install
 
-Install me via crates.io (TODO not yet!):
+Install me via crates.io:
 
 ```
-opstr = "1.0"
+cargo add opstr
 ```
 
 ## How to run
@@ -35,7 +36,7 @@ opstr = "1.0"
 3. Scroll down, choose the download appropriate for your platform
 4. Once the download has finished, extract the files of the tar-gz archive
 5. Add executable rights to the file of your platform
-6. Run the executable opstr on the command line
+6. Run the executable opstr on the command line, example: `opstr --op utf8-bytes "hello"` to get `[104, 101, 108, 108, 111]`
 
 ## How to configure
 
@@ -80,11 +81,23 @@ We follow semver principles:
 What to pay attention to before creating a new release:
 
 1. Update [UnicodeData](https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt)
-2. Update [SpecialCasing](https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt)
-3. [Regenerate CLDR data](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) with `icu4x-datagen -W -o data/icu4x_en-US.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
-3. Review which crate versions to update
-4. verify whether you plan a major/minor/patch release
-5. update the version number in README.adoc and main.rs
+2. Update [NamesList](https://www.unicode.org/Public/UCD/latest/ucd/NamesList.txt)
+3. Update [SpecialCasing](https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt) (TODO not yet in use)
+4. [Regenerate CLDR data](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) with `icu4x-datagen -W -o data/icu4x_en-US.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
+5. Review which crate versions to update
+6. Unicode "scalar"/"char"/"codepoint"? codepoint! Plural/singular? depends on the meaning. One? singular! Many? plural! Unknown? plural!
+6. verify whether you plan a major/minor/patch release
+7. update the version number in README.adoc and main.rs
+
+## Note: approach for Unicode/ASCII
+
+We have one generic op name. If the user specifies a locale, we need to supply a correct Unicode-compatible result (maybe require a proper `OPSTR_LOCALE_DATAFILE`). If the user specifies no locale, we need to provide a best-effort Unicode-less alternative.
+
+We can also expose the Unicode-less algorithm as additional operation (e.g. `sort` versus `sort-lexicographically`), because a suffix like `lexicographically` indicates that the sorting algorithm does not need/consider Unicode.
+
+## Note: Strings versus bytes in terminals
+
+Currently I only accept UTF-8 strings as arguments. The architecture allows strings as well as bytes as arguments. No op supports bytes though. As long as I cannot see a clear path how to support bytes supplied to rust through the CLI, I won't pursue that path (NOTE: rust abstracts CLI argument types away because Windows supplies UTF-16 and POSIX supplies bytes).
 
 ## Source Code
 

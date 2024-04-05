@@ -1,3 +1,5 @@
+use crate::UNICODE_DATA;
+
 /// Return a number between 0 (completely different) and 1 (equal) to indicate string similarity
 pub(crate) fn string_similarity(ref_string: &str, provided_string: &str) -> f32 {
     // determine the longer length
@@ -29,9 +31,7 @@ pub(crate) fn count_different_codepoints_of_shorter_string(first: &str, second: 
 //    name.replace("-", "").replace("_", "").replace(" ", "").to_string()
 //}
 
-const UNICODE_DATA: &str = include_str!("../data/UnicodeData.txt");
 pub const UNICODEPOINT_UNKNOWN: &str = "<unknown codepoint>";
-
 
 pub(crate) fn unicode_codepoint_names_lookup(codepoint: &[char]) -> Vec<Option<&'static str>> {
     let mut result = vec![];
