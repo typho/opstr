@@ -34,7 +34,7 @@ mod human_readable_bytes;
 mod indent_with_substring;
 mod is_ascii;
 mod is_caseinsensitively_equal;
-mod is_charset_id;
+//mod is_charset_id; // TODO: requires revision
 mod is_contained;
 mod is_crlf_lineterminated;
 mod is_empty;
@@ -124,7 +124,6 @@ pub(crate) use human_readable_bytes::HumanReadableBytes;
 pub(crate) use indent_with_substring::IndentWithSubstring;
 pub(crate) use is_ascii::IsAscii;
 pub(crate) use is_caseinsensitively_equal::IsCaseinsensitivelyEqual;
-pub(crate) use is_charset_id::IsCharsetID;
 pub(crate) use is_contained::IsContained;
 pub(crate) use is_crlf_lineterminated::IsCRLFLineTerminated;
 pub(crate) use is_empty::IsEmpty;
@@ -238,7 +237,6 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(IsCaseinsensitivelyEqual),
     spec!(IsContained),
     spec!(IsCRLFLineTerminated),
-    spec!(IsCharsetID),
     spec!(IsEmpty),
     spec!(IsEqual),
     spec!(IsLFLineTerminated),

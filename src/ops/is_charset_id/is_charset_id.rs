@@ -11,7 +11,6 @@ use crate::range;
 
 use crate::ops::is_charset_id::CD;
 use crate::ops::is_charset_id::CharsetDataEntry;
-use crate::ops::is_charset_id::CHARSET_DATA;
 
 pub struct IsCharsetID {}
 
@@ -28,57 +27,6 @@ impl IsCharsetID {
         }
 
         None
-    }
-
-    fn lookup__(name: &str) -> Option<CharsetDataEntry> {
-        // TODO deprecate and remove?
-        if !name.is_ascii() {
-            return None;
-        }
-    
-        // TODO: windows() is so wrong here?! Did I write this?
-        let name_ascii = name.as_bytes();
-        match CHARSET_DATA.windows(name_ascii.len()).position(|window| window == name_ascii) {
-            None => None,
-            Some(pos) => {
-                // find start of record (i.e. previous \x1D)
-                let mut start = pos;
-                while CHARSET_DATA[start] != b'\x1D' {
-                    start -= 1;
-                }
-                start += 1;
-    
-                // our entry to be filled
-                let mut data = CharsetDataEntry::default();
-    
-                // find preferred_name (i.e. … until next \x1E)
-                let mut end = start;
-                while CHARSET_DATA[end] != b'\x1E' {
-                    end += 1;
-                }
-                data.preferred_name = String::from_utf8_lossy(&CHARSET_DATA[start..end]).to_string();
-    
-                // find name (i.e. … until next \x1E)
-                end += 1;
-                start = end;
-                while CHARSET_DATA[end] != b'\x1E' {
-                    end += 1;
-                }
-                data.name = String::from_utf8_lossy(&CHARSET_DATA[start..end]).to_string();
-    
-                // find names (i.e. split by \x1F until end of record \x1D)
-                while CHARSET_DATA[end] != b'\x1D' {
-                    end += 1;
-                    start = end;
-                    while CHARSET_DATA[end] != b'\x1F' && CHARSET_DATA[end] != b'\x1D' {
-                        end += 1;
-                    }
-                    data.names.push(String::from_utf8_lossy(&CHARSET_DATA[start..end]).to_string());
-                }
-    
-                Some(data)
-            }
-        }
     }
 }
 
