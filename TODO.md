@@ -2,6 +2,10 @@
 
 * Option `--per-line-as-arg N`: run the operation for every line of the file mentioned in argument at index `N` and replace argument `N` with the line content, only works for ops with scalar output? Currently we don't have a concept to merge `Output` instances, so this is difficult to implement
 
+# Ops put on hold
+
+* `is-charset-id` requires a revision. The implementation is just not ready for the 1.0 release. It does not mention proper standards and its storage optimality has not been revised.
+
 # Proposals for more ops
 
 * implement function `combine`: e.g. ["combining", "strike-through", text] … (relation to function `combining-codepoint-list`?) … original spec: X: add X combiner to all codepoints where X in {bold, italic, cursive, sans-serif, strike-through, underline, slash-through, double-struck, monospace, Fraktur, upside-down, bubble text, square text, small-caps, fullwidth, zigzag-above, diamond-enclosed, redact, circle-backslash}, c.f. https://yaytext.com/square-text/

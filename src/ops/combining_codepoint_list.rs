@@ -19,6 +19,7 @@ for i in sorted(combining_characters_by_wikipedia):
 
 */
 
+// TODO review
 pub struct CombiningCodepointList {}
 
 impl traits::Op for CombiningCodepointList {

@@ -12,12 +12,12 @@ mod base64_encode;
 mod base64_url_safe_encode;
 mod camelcase;
 mod center;
-mod codepoints_ustring_list;
+mod codepoints_unotation;
 mod codepoints;
 mod codepoint_frequencies;
 mod codepoint_lookup;
-mod codepoint_names;
-mod combining_codepoint_list;
+mod codepoints_names;
+//mod combining_codepoint_list; // TODO review
 mod concatenate;
 mod count_codepoints;
 mod count_grapheme_clusters;
@@ -26,6 +26,7 @@ mod count_utf16_bytes;
 mod count_utf8_bytes;
 mod dedent;
 mod dedent_with_substring;
+mod emoji_by_name;
 mod format;
 mod grapheme_clusters;
 mod guarantee_prefix;
@@ -34,7 +35,7 @@ mod human_readable_bytes;
 mod indent_with_substring;
 mod is_ascii;
 mod is_caseinsensitively_equal;
-//mod is_charset_id; // TODO: requires revision
+//mod is_charset_id; // TODO: review
 mod is_contained;
 mod is_crlf_lineterminated;
 mod is_empty;
@@ -80,7 +81,6 @@ mod strikethrough;
 mod subscript;
 mod substring_byte_indices;
 mod superscript;
-mod text_to_emoji;
 mod utf8_bytes;
 mod utf16_big_endian_bytes;
 mod utf16_little_endian_bytes;
@@ -103,11 +103,11 @@ pub(crate) use base64_encode::Base64Encode;
 pub(crate) use base64_url_safe_encode::Base64UrlSafeEncode;
 pub(crate) use camelcase::Camelcase;
 pub(crate) use center::Center;
-pub(crate) use codepoints_ustring_list::CodepointsUstringList;
+pub(crate) use codepoints_unotation::CodepointsUNotation;
 pub(crate) use codepoints::Codepoints;
 pub(crate) use codepoint_frequencies::CodepointFrequencies;
 pub(crate) use codepoint_lookup::CodepointLookup;
-pub(crate) use codepoint_names::CodepointNames;
+pub(crate) use codepoints_names::CodepointsNames;
 pub(crate) use concatenate::Concatenate;
 pub(crate) use count_codepoints::CountCodepoints;
 pub(crate) use count_grapheme_clusters::CountGraphemeClusters;
@@ -116,6 +116,7 @@ pub(crate) use count_utf16_bytes::CountUtf16Bytes;
 pub(crate) use count_utf8_bytes::CountUtf8Bytes;
 pub(crate) use dedent::Dedent;
 pub(crate) use dedent_with_substring::DedentWithSubstring;
+pub(crate) use emoji_by_name::EmojiByName;
 pub(crate) use format::Format;
 pub(crate) use grapheme_clusters::GraphemeClusters;
 pub(crate) use guarantee_suffix::GuaranteeSuffix;
@@ -169,7 +170,6 @@ pub(crate) use strip_whitespaces_at_end::StripWhitespacesAtEnd;
 pub(crate) use subscript::Subscript;
 pub(crate) use substring_byte_indices::SubstringByteIndices;
 pub(crate) use superscript::Superscript;
-pub(crate) use text_to_emoji::TextToEmoji;
 pub(crate) use uppercase_for_ascii::UppercaseForAscii;
 pub(crate) use utf8_bytes::Utf8Bytes;
 pub(crate) use utf16_little_endian_bytes::Utf16LittleEndianBytes;
@@ -196,7 +196,6 @@ use crate::input;
 use crate::output;
 use crate::range;
 
-use self::combining_codepoint_list::CombiningCodepointList;
 use self::traits::Op;
 
 type FnName = fn () -> &'static str;
@@ -213,12 +212,11 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Base64UrlSafeEncode),
     spec!(Camelcase),
     spec!(Center),
-    spec!(CodepointsUstringList),
+    spec!(CodepointsUNotation),
     spec!(CodepointFrequencies),
     spec!(CodepointLookup),
-    spec!(CodepointNames),
+    spec!(CodepointsNames),
     spec!(Codepoints),
-    spec!(CombiningCodepointList),
     spec!(Concatenate),
     spec!(CountCodepoints),
     spec!(CountGraphemeClusters),
@@ -280,7 +278,7 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(Subscript),
     spec!(SubstringByteIndices),
     spec!(Superscript),
-    spec!(TextToEmoji),
+    spec!(EmojiByName),
     spec!(UppercaseForAscii),
     spec!(Utf8Bytes),
     spec!(Utf16LittleEndianBytes),

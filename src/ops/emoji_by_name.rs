@@ -5,11 +5,11 @@ use crate::ops::traits;
 use crate::output::Output;
 use crate::range;
 
-pub struct TextToEmoji {}
+pub struct EmojiByName {}
 
-const EMOJI_DATA: &'static [u8] = include_bytes!("text_to_emoji_data/emoji-data.bin");
+const EMOJI_DATA: &'static [u8] = include_bytes!("../../data/emoji_data/emoji-data.bin");
 
-impl TextToEmoji {
+impl EmojiByName {
     fn function_for_chars(arg: &str, arg_id: usize) -> Result<String, LibError> {
         let argument = arg.to_ascii_lowercase();
 
@@ -40,8 +40,8 @@ impl TextToEmoji {
     }
 }
 
-impl traits::Op for TextToEmoji {
-    fn name() -> &'static str { "text-to-emoji" }
+impl traits::Op for EmojiByName {
+    fn name() -> &'static str { "emoji-by-name" }
     fn usage() -> &'static str { "<#1 string emoji-description>" }
     fn description() -> &'static str { "given a Emoji Sequence Data (UTS #51) description string #1 return the corresponding emoji (e.g. 'smiling face with halo' returns '😇')" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }

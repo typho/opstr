@@ -6,10 +6,10 @@ use crate::ops::traits;
 use crate::output::{Output,OutputValue};
 use crate::range;
 
-pub struct CodepointNames {}
+pub struct CodepointsNames {}
 
-impl traits::Op for CodepointNames {
-    fn name() -> &'static str { "codepoint-names" }
+impl traits::Op for CodepointsNames {
+    fn name() -> &'static str { "codepoints-names" }
     fn usage() -> &'static str { "<#1 string to-decompose-and-represent>" }
     fn description() -> &'static str { "look up the Unicode name (or 'unknown-name' if unknown) of each codepoint of string #1, e.g. [“LATIN SMALL LETTER H”, “LATIN SMALL LETTER DOTLESS ”]" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }

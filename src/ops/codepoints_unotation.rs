@@ -5,16 +5,16 @@ use crate::ops::traits;
 use crate::output::{Output,OutputValue};
 use crate::range;
 
-pub struct CodepointsUstringList {}
+pub struct CodepointsUNotation {}
 
-impl CodepointsUstringList {
+impl CodepointsUNotation {
     fn function_for_chars(s: &str) -> Vec<String> {
         s.chars().map(|x: char| format!("U+{:04X}", x as u32)).collect::<Vec<String>>()
     }
 }
 
-impl traits::Op for CodepointsUstringList {
-    fn name() -> &'static str { "codepoints-ustring-list" }
+impl traits::Op for CodepointsUNotation {
+    fn name() -> &'static str { "codepoints-unotation" }
     fn usage() -> &'static str { "<#1 string to-decompose-and-represent>" }
     fn description() -> &'static str { "represent string #1 with Unicode codepoints, e.g. [“U+0048”, “U+0069”]" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
