@@ -86,8 +86,9 @@ What to pay attention to before creating a new release:
 4. [Regenerate CLDR data](https://github.com/unicode-org/icu4x/blob/main/tutorials/data_management.md) with `icu4x-datagen -W -o data/icu4x_en-US.blob2 --include-collations search-all --trie-type small --locales en-us --keys all --format blob`
 5. Review which crate versions to update
 6. Unicode "scalar"/"char"/"codepoint"? codepoint! Plural/singular? depends on the meaning. One? singular! Many? plural! Unknown? plural!
-6. verify whether you plan a major/minor/patch release
-7. update the version number in README.adoc and main.rs
+7. verify whether you plan a major/minor/patch release
+8. verify that the Op rust type matches its reported name string (TODO build automated tool for this?)
+9. update the version number in README.adoc and main.rs
 
 ## Note: approach for Unicode/ASCII
 

@@ -124,6 +124,9 @@ fn main() -> Result<(), LibError> {
         println!("{:?}", args);
         println!("{:?}", conf);
         return Ok(());
+
+    } else if opts.list_color_scheme {
+        return Ok(opstr::list_color_schemes(&conf)?.print(&conf)?);
     }
 
     if opts.list_ops {

@@ -223,6 +223,19 @@ impl ColorScheme {
         }
     }
 
+    /// Returns the entire list of supported color schemes as a slice
+    pub fn all_as_slice() -> &'static [ColorScheme] {
+        &[
+            ColorScheme::NoColors,
+            ColorScheme::Default,
+            ColorScheme::RegularAndBold,
+            ColorScheme::Red,
+            ColorScheme::Green,
+            ColorScheme::Blue,
+            ColorScheme::White,
+        ]
+    }
+
     /// represents an operation like ``----- hello-world ---------``
     pub fn op_section(&self, op_name: &str) -> io::Result<()> {
         if self == &ColorScheme::NoColors {

@@ -45,10 +45,12 @@ pub(crate) const DEFAULT_LOCALE_DATA: &[u8] = include_bytes!("../data/icu4x_en-u
 pub(crate) const UNICODE_DATA: &str = include_str!("../data/UnicodeData.txt");
 
 pub use config::Configuration;
+pub use config::ColorScheme;
 pub use errors::LibError;
 pub use input::{Arg, Args};
 pub use output::Output;
 pub use matcher::list_all_ops;
 pub use matcher::list_matching_ops;
+pub use matcher::list_color_schemes;
 pub use matcher::run_op;
 pub use matcher::run_matching_ops;

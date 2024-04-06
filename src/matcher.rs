@@ -12,6 +12,7 @@ use crate::ops;
 use crate::config::Configuration;
 use crate::output::{Output,OutputValue};
 use crate::range;
+use crate::ColorScheme;
 
 /// Return the list of all operations as `Output::Association` of (name, description) entries.
 pub fn list_all_ops(_conf: &Configuration) -> Output {
@@ -142,4 +143,13 @@ pub fn run_matching_ops(conf: &Configuration, args: &input::Args) -> Result<(), 
     }
 
     Ok(())
+}
+
+/// Run all operations appropriate for the provided `Args`. Write the result to stdout & stderr, so we return `()`
+pub fn list_color_schemes(_conf: &Configuration) -> Result<Output, LibError> {
+    let mut cs_list = vec![];
+    for cs in ColorScheme::all_as_slice() {
+        cs_list.push(OutputValue::from_str(&cs.to_string()));
+    }
+    Ok(Output::HomogeneousList { data: cs_list, notes: vec![] })
 }
