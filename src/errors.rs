@@ -5,7 +5,9 @@ use std::io;
 
 use crate::range::Range;
 
+#[cfg(feature = "icu")]
 use icu::locid;
+#[cfg(feature = "icu")]
 use icu_provider;
 
 /// `LibError` represents one of all possible error cases possible to occur in this library
@@ -41,6 +43,7 @@ pub enum LibError {
     LocaleError(String),
 }
 
+#[cfg(feature = "icu")]
 impl From<locid::ParserError> for LibError {
     fn from(err: locid::ParserError) -> Self {
         let mut msg = String::from("ICU parsing error: ");
@@ -49,6 +52,7 @@ impl From<locid::ParserError> for LibError {
     }
 }
 
+#[cfg(feature = "icu")]
 impl From<icu_provider::DataError> for LibError {
     fn from(err: icu_provider::DataError) -> Self {
         let mut msg = String::from("provided ICU data invalid: ");
@@ -57,6 +61,7 @@ impl From<icu_provider::DataError> for LibError {
     }
 }
 
+#[cfg(feature = "icu")]
 impl From<icu::collator::CollatorError> for LibError {
     fn from(err: icu::collator::CollatorError) -> Self {
         LibError::IOError(err.to_string())

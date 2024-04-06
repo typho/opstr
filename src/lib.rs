@@ -39,6 +39,7 @@ pub(crate) mod output;
 /// This is a binary blob generated with the icu4x library.
 /// It contains various locale-specific convention data.
 /// The README file describes how to generate it as part of the release management.
+#[cfg(feature = "icu")]
 pub(crate) const DEFAULT_LOCALE_DATA: &[u8] = include_bytes!("../data/icu4x_en-us.blob2");
 
 /// This is the Unicode UCD data file with metadata per Unicode codepoint

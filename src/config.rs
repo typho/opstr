@@ -143,7 +143,7 @@ impl Configuration {
         if let Ok(val) = env::var("OPSTR_LOCALE") {
             // NOTE: there is no trivial locale verification algorithm
             // I expect some failure during the operation later, if the locale is invalid, but must be provided.
-            self.locale = Some(val.parse()?);
+            self.locale = Self::evaluate_locale(val)?;
         }
 
         if let Ok(val) = env::var("OPSTR_SYNTAX") {
@@ -169,7 +169,7 @@ impl Configuration {
     }
 
     #[cfg(not(feature = "icu"))]
-    fn evaluate_locale(locale: String) -> Result<Option<()>, LibError> {
+    fn evaluate_locale(_locale: String) -> Result<Option<()>, LibError> {
         Err(LibError::CLIValueError("locale", "this executable was compiled without 'icu' support and therefore no locale support".to_string()))
     }
 }

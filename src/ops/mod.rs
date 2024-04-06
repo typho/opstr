@@ -57,6 +57,7 @@ mod normalize_with_nfc;
 mod normalize_with_nfd;
 mod normalize_with_nfkd;
 mod normalize_with_nfkc;
+#[cfg(feature = "regex")]
 mod regex_search;
 mod remove_ansi_escape_sequences;
 mod repeat;
@@ -146,6 +147,7 @@ pub(crate) use normalize_with_nfc::NormalizeWithNFC;
 pub(crate) use normalize_with_nfd::NormalizeWithNFD;
 pub(crate) use normalize_with_nfkc::NormalizeWithNFKC;
 pub(crate) use normalize_with_nfkd::NormalizeWithNFKD;
+#[cfg(feature = "regex")]
 pub(crate) use regex_search::RegexSearch;
 pub(crate) use remove_ansi_escape_sequences::RemoveAnsiEscapeSequences;
 pub(crate) use repeat::Repeat;
@@ -254,6 +256,7 @@ pub(crate) const INDEX: &[(FnName, FnDesc, FnUse, FnNum, FnPriority, Fn)] = &[
     spec!(NormalizeWithNFD),
     spec!(NormalizeWithNFKC),
     spec!(NormalizeWithNFKD),
+    #[cfg(feature = "regex")]
     spec!(RegexSearch),
     spec!(RemoveAnsiEscapeSequences),
     spec!(Repeat),
