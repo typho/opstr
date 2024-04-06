@@ -8,7 +8,7 @@ use crate::range;
 pub struct IsCRLFLineTerminated {}
 
 impl traits::Op for IsCRLFLineTerminated {
-    fn name() -> &'static str { "is-lf-lineterminated" }
+    fn name() -> &'static str { "is-crlf-lineterminated" }
     fn usage() -> &'static str { "<#1 string lines>" }
     fn description() -> &'static str { "is (U+000D CARRIAGE RETURN)(U+000A LINE FEED) the only sequence causing line breaks in string #1?" }
     fn acceptable_number_of_arguments() -> range::Range { range::Range::IndexIndex(1, 1) }
