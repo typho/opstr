@@ -259,7 +259,11 @@ impl OutputValue {
                 _ => panic!("unsupported radix: {}", conf.radix),
             },
             OutputValue::SingleLineText(t) => {
-                format!("q/{}/", t.replace("/", "\\/"))
+                if t.contains('\'') {
+                    format!("q/{}/", t.replace("/", "\\/"))
+                } else {
+                    format!("'{}'", t)
+                }
             },
             OutputValue::MultiLineText(t) => {
                 let esc1 = t.replace("\\", "\\\\");
@@ -1227,7 +1231,17 @@ impl Output {
                 println!("{}", data.represent_perl(conf));
             },
             Output::HomogeneousList { data, .. } | Output::HeterogeneousList { data, .. } => {
-                println!("({})", data.iter().map(|v| v.represent_perl(conf)).collect::<Vec<String>>().join(", ") );
+                col.inner_wrapper("(")?;
+                let count = data.len();
+                for (i, v) in data.iter().enumerate() {
+                    print!("{}", v.represent_perl(conf));
+
+                    if i != count - 1 {
+                        col.inner_separator(", ")?;
+                    }
+                }
+                col.inner_wrapper(")")?;
+                println!("");
             },
             Output::Association { data, .. } => {
                 // NOTE: perl only accepts strings as keys in hashes
@@ -1278,7 +1292,7 @@ impl Output {
                 }
 
                 // write content to stdout
-                print!("( ");
+                col.outer_wrapper("( ")?;
                 let count = data.len();
                 let mut i = 0;
                 for (key, value) in data.iter() {
@@ -1286,29 +1300,57 @@ impl Output {
                         Some(k) => k,
                         None => continue,
                     };
+                    if i != 0 {
+                        print!("  ");
+                    }
 
                     i += 1;
-                    if i == count {
-                        print!("{} => {}", new_key.represent_perl(conf), value.represent_perl(conf));
-                    } else {
-                        println!("{} => {},", new_key.represent_perl(conf), value.represent_perl(conf));
+                    print!("{}", new_key.represent_perl(conf));
+                    col.inner_separator(" => ")?;
+                    print!("{}", value.represent_perl(conf));
+
+                    if i != count - 1 {
+                        col.outer_separator(",")?;
+                        println!("");
                     }
                 }
-                println!(");");
+                col.outer_wrapper(");")?;
+                println!("");
             },
             Output::Table { data, column_headers, .. } => {
+                // print column headers
                 let col_header_values = column_headers.iter().map(|v| { OutputValue::from_str(&v) }).collect::<Vec<OutputValue>>();
                 print!("my @headers = ");
-                println!("({});", col_header_values.iter().map(|v| v.represent_perl(conf)).collect::<Vec<String>>().join(", ") );
-                println!("@table = (");
-                for row in data.iter() {
-                    print!("\t[ ");
-                    for cell in row.iter() {
-                        print!("{}, ", cell.represent_perl(conf));
+                col.inner_wrapper("(")?;
+                let count = col_header_values.len();
+                for (i, v) in col_header_values.iter().enumerate() {
+                    print!("{}", v.represent_perl(conf));
+                    if i != count - 1 {
+                        col.inner_separator(", ")?;
                     }
-                    print!("],");
                 }
-                println!(");");
+                col.inner_wrapper(");")?;
+                println!("");
+
+                // print table content
+                print!("@table = ");
+                col.outer_wrapper("(")?;
+                println!("");
+                for row in data.iter() {
+                    print!("\t");
+                    col.inner_wrapper("[ ")?;
+                    let count = row.len();
+                    for (i, cell) in row.iter().enumerate() {
+                        print!("{}", cell.represent_perl(conf));
+                        if i != count - 1 {
+                            col.inner_separator(", ")?;
+                        }
+                    }
+                    col.inner_wrapper(" ],")?;
+                    println!("");
+                }
+                col.outer_wrapper(");")?;
+                println!("");
             },
         }
 

@@ -103,9 +103,10 @@ impl Configuration {
                 "human" | "default" => Syntax::Human,
                 "java" => Syntax::Java,
                 "kotlin" => Syntax::Kotlin,
+                "perl" => Syntax::Perl,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Err(LibError::CLIValueError("syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(LibError::CLIValueError("syntax", format!("Sorry, syntax '{}' is unsupported", syntax))),
             };
         }
 
@@ -136,7 +137,7 @@ impl Configuration {
         if let Ok(val) = env::var("OPSTR_COLOR_SCHEME") {
             match ColorScheme::by_name(&val) {
                 Some(cs) => self.color_scheme = cs,
-                None => return Err(LibError::CLIValueError("color-scheme", "Unknown color scheme".to_string())),
+                None => return Err(LibError::CLIValueError("color-scheme", format!("Unknown color scheme '{}'", val))),
             }
         }
 
@@ -154,9 +155,10 @@ impl Configuration {
                 "human" => Syntax::Human,
                 "java" => Syntax::Java,
                 "kotlin" => Syntax::Kotlin,
+                "perl" => Syntax::Perl,
                 "python" | "py" => Syntax::Python,
                 "rust" | "rustlang" => Syntax::Rust,
-                _ => return Err(LibError::CLIValueError("syntax", "Sorry, no support yet".to_string())),
+                _ => return Err(LibError::CLIValueError("syntax", format!("Sorry, syntax '{}' is unsupported", val))),
             };
         }
 
