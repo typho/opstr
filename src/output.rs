@@ -6,7 +6,6 @@ use crate::config::Syntax;
 use crate::errors::LibError;
 
 use std::collections;
-use std::io;
 
 /// A scalar value in the result of the operation
 #[non_exhaustive]
@@ -44,6 +43,7 @@ impl OutputValue {
                     Syntax::Cpp | Syntax::Golang | Syntax::Human | Syntax::Java |
                     Syntax::Kotlin | Syntax::Python | Syntax::Rust => "bool",
                     Syntax::C => "uint8_t",
+                    Syntax::Perl => "int",
                 }
             },
             OutputValue::Byte(_) => {
@@ -52,6 +52,7 @@ impl OutputValue {
                     Syntax::Golang | Syntax::Human => "byte",
                     Syntax::Java => "int",
                     Syntax::Kotlin => "UByte",
+                    Syntax::Perl => "int",
                     Syntax::Python => "bytes",
                     Syntax::Rust => "u8",
                 }
@@ -63,6 +64,7 @@ impl OutputValue {
                     Syntax::Human | Syntax::Python => "int",
                     Syntax::Java => "long",
                     Syntax::Kotlin => "Long",
+                    Syntax::Perl => "int",
                     Syntax::Rust => "int64",
                 }
             },
@@ -73,6 +75,7 @@ impl OutputValue {
                     Syntax::Golang => "string",
                     Syntax::Human => "single-line-text",
                     Syntax::Java | Syntax::Kotlin => "String",
+                    Syntax::Perl => "q//",
                     Syntax::Python => "str",
                     Syntax::Rust => "&str",
                 }
@@ -84,6 +87,7 @@ impl OutputValue {
                     Syntax::Golang => "string",
                     Syntax::Human => "multi-line-text",
                     Syntax::Java | Syntax::Kotlin => "String",
+                    Syntax::Perl => "q//",
                     Syntax::Python => "str",
                     Syntax::Rust => "&str",
                 }
@@ -99,6 +103,7 @@ impl OutputValue {
             Syntax::Human => self.represent_human(conf),
             Syntax::Java => self.represent_java(conf),
             Syntax::Kotlin => self.represent_kotlin(conf),
+            Syntax::Perl => self.represent_perl(conf),
             Syntax::Python => self.represent_python(conf),
             Syntax::Rust => self.represent_rust(conf),
         }
@@ -236,6 +241,36 @@ impl OutputValue {
         }
     }
 
+    pub fn represent_perl(&self, conf: &Configuration) -> String {
+        match self {
+            OutputValue::Bool(b) => String::from(if *b { "1" } else { "0" }),
+            OutputValue::Byte(b) => match conf.radix {
+                2 => format!("0b{:08b}", *b),
+                8 => format!("0o{:03o}", *b),
+                10 => format!("{}", *b),
+                16 => if conf.alpha_upper { format!("0x{:02X}", *b) } else { format!("0x{:02x}", *b) },
+                _ => panic!("unsupported radix: {}", conf.radix),
+            },
+            OutputValue::Int(i) => match conf.radix {
+                2 => format!("0b{:b}", *i),
+                8 => format!("0o{:o}", *i),
+                10 => format!("{}", *i),
+                16 => if conf.alpha_upper { format!("0x{:X}", *i) } else { format!("0x{:x}", *i) },
+                _ => panic!("unsupported radix: {}", conf.radix),
+            },
+            OutputValue::SingleLineText(t) => {
+                format!("q/{}/", t.replace("/", "\\/"))
+            },
+            OutputValue::MultiLineText(t) => {
+                let esc1 = t.replace("\\", "\\\\");
+                let esc2 = esc1.replace("\0", "\\0").replace("\n", "\\n").replace("\r", "\\r");
+                let esc3 = esc2.replace("\t", "\\t").replace("\x0B", "\\v").replace("\x0C", "\\f");
+                let esc4 = esc3.replace("\x1b", "\\e").replace("\x07", "\\a").replace("\x08", "\\b");
+                format!("\"{}\"", esc4)
+            },
+        }
+    }
+
     pub fn represent_python(&self, conf: &Configuration) -> String {
         match self {
             OutputValue::Bool(b) => String::from(if *b { "True" } else { "False" }),
@@ -349,10 +384,6 @@ pub enum Output {
 impl Eq for Output {}
 
 type Err = Result<(), LibError>;
-
-fn io2errs(e: io::Error) -> LibError {
-    <std::io::Error as Into<LibError>>::into(e)
-}
 
 impl Output {
     /// Create an `Output` element from the provided list of `OutputValue` items
@@ -574,7 +605,7 @@ impl Output {
             Output::Association { notes, .. } |
             Output::Table { notes, .. } => {
                 for note in notes {
-                    col.note_label("NOTE").map_err(io2errs)?;
+                    col.note_label("NOTE")?;
                     eprintln!(": {}", note);
                 }
             }
@@ -587,6 +618,7 @@ impl Output {
             Syntax::Human => self.print_human(conf),
             Syntax::Java => self.print_java(conf),
             Syntax::Kotlin => self.print_kotlin(conf),
+            Syntax::Perl => self.print_perl(conf),
             Syntax::Python => self.print_python(conf),
             Syntax::Rust => self.print_rust(conf),
         }?;
@@ -1181,6 +1213,102 @@ impl Output {
                 }
                 col.outer_wrapper(")")?;
                 println!(";");
+            },
+        }
+
+        Ok(())
+    }
+
+    fn print_perl(&self, conf: &Configuration) -> Err {
+        let col = conf.color_scheme;
+
+        match self {
+            Output::Scalar { data, .. } => {
+                println!("{}", data.represent_perl(conf));
+            },
+            Output::HomogeneousList { data, .. } | Output::HeterogeneousList { data, .. } => {
+                println!("({})", data.iter().map(|v| v.represent_perl(conf)).collect::<Vec<String>>().join(", ") );
+            },
+            Output::Association { data, .. } => {
+                // NOTE: perl only accepts strings as keys in hashes
+
+                // convert keys to strings
+                let mut data_key_to_str_key = collections::HashMap::new();
+                let mut all_keys_are_strings = true;
+                for key in data.keys() {
+                    if let OutputValue::MultiLineText(_) | OutputValue::SingleLineText(_) = key {
+                        data_key_to_str_key.insert(key, key.to_owned());
+                    } else {
+                        all_keys_are_strings = false;
+                        let str_forced = key.represent_perl(conf);
+                        let str_repr = OutputValue::SingleLineText(str_forced);
+                        data_key_to_str_key.insert(key, str_repr);
+                    }
+                }
+
+                if !all_keys_are_strings {
+                    col.note_label("NOTE")?;
+                    println!(": perl hashes only accept strings as keys - keys have been converted");
+                }
+
+                let text_of_output_value = |v: &OutputValue| {
+                    if let OutputValue::MultiLineText(t) | OutputValue::SingleLineText(t) = v {
+                        t.to_owned()
+                    } else {
+                        // NOTE: must not happen because all keys must be OutputValue::*Text
+                        String::new()
+                    }
+                };
+
+                let new_keys = data_key_to_str_key.values().map(text_of_output_value).collect::<Vec<String>>();
+                let mut new_keys_are_unique = true;
+                for (i, v) in new_keys.iter().enumerate() {
+                    if let Some(idx) = new_keys.iter().position(|e| { e == v }) {
+                        if i != idx {
+                            new_keys_are_unique = false;
+                        }
+                    }
+                }
+
+                // NOTE: since we generate perl string representations, it might happen that elements are not unique.
+                //       In this case, perl will throw an error. Since we cannot prevent it, I want to inform the user about it.
+                if !new_keys_are_unique {
+                    col.note_label("NOTE")?;
+                    println!(": perl hash keys must be unique - sadly these keys are not unique but I couldn't prevent it");
+                }
+
+                // write content to stdout
+                print!("( ");
+                let count = data.len();
+                let mut i = 0;
+                for (key, value) in data.iter() {
+                    let new_key = match data_key_to_str_key.get(key) {
+                        Some(k) => k,
+                        None => continue,
+                    };
+
+                    i += 1;
+                    if i == count {
+                        print!("{} => {}", new_key.represent_perl(conf), value.represent_perl(conf));
+                    } else {
+                        println!("{} => {},", new_key.represent_perl(conf), value.represent_perl(conf));
+                    }
+                }
+                println!(");");
+            },
+            Output::Table { data, column_headers, .. } => {
+                let col_header_values = column_headers.iter().map(|v| { OutputValue::from_str(&v) }).collect::<Vec<OutputValue>>();
+                print!("my @headers = ");
+                println!("({});", col_header_values.iter().map(|v| v.represent_perl(conf)).collect::<Vec<String>>().join(", ") );
+                println!("@table = (");
+                for row in data.iter() {
+                    print!("\t[ ");
+                    for cell in row.iter() {
+                        print!("{}, ", cell.represent_perl(conf));
+                    }
+                    print!("],");
+                }
+                println!(");");
             },
         }
 

@@ -481,6 +481,7 @@ pub enum Syntax {
     Cpp,
     Java,
     Kotlin,
+    Perl,
     Rust,
 }
 
@@ -494,6 +495,7 @@ impl Syntax {
             Syntax::Human => "human",
             Syntax::Java => "Java",
             Syntax::Kotlin => "Kotlin",
+            Syntax::Perl => "perl",
             Syntax::Python => "python",
             Syntax::Rust => "rust",
         }
