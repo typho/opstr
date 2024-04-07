@@ -1,7 +1,7 @@
 # README
 
 **author:** tajpulo <br/>
-**version:** 1.0.0
+**version:** 1.1.0
 
 ## What is it about?
 
@@ -112,7 +112,8 @@ See [the LICENSE file](LICENSE) (Hint: MIT license).
 
 **0.7.0:** first public release <br/>
 **0.9.0:** final evaluation release <br/>
-**1.0.0:** uses Unicode Version 15.0, release with backwards compatibility guarantees
+**1.0.0:** uses Unicode Version 15.0, release with backwards compatibility guarantees <br/>
+**1.1.0:** Perl support, deterministic output for codepoint-frequencies
 
 ## Issues
 

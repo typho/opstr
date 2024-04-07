@@ -19,7 +19,7 @@ use std::fs;
 #[derive(Debug, Parser)]
 #[command(name = "opstr")]
 #[command(author = "tajpulo <tajpulo@typho.org>")]
-#[command(version = "1.0")]
+#[command(version = "1.1.0")]
 #[command(about = "Operate on strings")]
 #[command(author, version, about, long_about = None, trailing_var_arg = true)]
 struct Opts {
