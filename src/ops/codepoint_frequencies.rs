@@ -7,7 +7,6 @@ use crate::output::{Output, OutputValue};
 use crate::range;
 
 use std::cmp::Ordering;
-use std::collections;
 
 pub struct CodepointFrequencies {}
 
@@ -30,19 +29,30 @@ impl traits::Op for CodepointFrequencies {
         let string: &str = args.get(0)?.try_into()?;
         let codepoint_names = auxiliary::unicode_codepoint_names_lookup(&string.chars().collect::<Vec<char>>());
         let total_count = string.chars().count();
-        let mut frequency: collections::HashMap<char, (usize, &'static str)> = collections::HashMap::new();
+        let mut frequency: Vec<(char, (usize, &'static str))> = vec![];
 
         for (chr, codepoint_name) in string.chars().zip(codepoint_names) {
-            if frequency.contains_key(&chr) {
-                let (chr_freq, name) = frequency[&chr];
-                frequency.insert(chr, (chr_freq + 1, name));
+            // determine index within frequency
+            let mut opt_index = None;
+            for (i, e) in frequency.iter().enumerate() {
+                if e.0 == chr {
+                    opt_index = Some(i);
+                }
+            }
+
+            if let Some(idx) = opt_index {
+                let (_, (chr_freq, name)) = frequency.swap_remove(idx);
+                frequency.push((chr, (chr_freq + 1, name)));
             } else {
-                frequency.insert(chr, match codepoint_name {
+                frequency.push((chr, match codepoint_name {
                     Some(name) => (1, name),
                     None => (1, auxiliary::UNICODEPOINT_UNKNOWN),
-                });
+                }));
             }
         }
+
+        frequency.sort_by_key(|e| e.0);
+        frequency.sort_by_key(|e| e.1.0);
 
         let mut data: Vec<Vec<OutputValue>> = vec![];
         for (chr, (count, codepoint_name)) in frequency.iter() {
