@@ -176,16 +176,11 @@ impl Configuration {
     }
 }
 
-/// Enum `ColorScheme` in use to represent the diagnostic message.
+/// Enum `ColorScheme` in use to represent output messages.
 /// 
 /// The default one might be a good choice, but for visually impaired
 /// people, alternatives must be provided. Furthermore personal preferences
 /// shall be addressed.
-/// 
-/// For the library, it shall be pointed out that ColorScheme::NONE
-/// might be handled by different program logic. This is because
-/// we use method ``uses_colors`` to determine whether colored output
-/// is actually used. And we invoke different methods depending on the answer.
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug, Default, Hash, PartialEq)]
 pub enum ColorScheme {
