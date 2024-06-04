@@ -43,6 +43,7 @@
 * op return lines N–M … so given line numbers, return the corresponding range of lines
 * op binary-to-text encodings
 * op ASCII art
+* op punycode
 * op random string (e.g. names) in writing system X
 * op is-codepoint-boundary: is index #2 a boundary of a Unicode codepoint in string #1?
 * op zip for line prefixes and line suffixes
