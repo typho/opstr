@@ -1,5 +1,7 @@
 # CLI proposals
 
+TODO compare with https://crates.io/crates/voca_rs
+
 * Option `--per-line-as-arg N`: run the operation for every line of the file mentioned in argument at index `N` and replace argument `N` with the line content, only works for ops with scalar output? Currently we don't have a concept to merge `Output` instances, so this is difficult to implement
 
 # Ops put on hold
@@ -9,6 +11,7 @@
 # Proposals for more ops
 
 * implement function `combine`: e.g. ["combining", "strike-through", text] … (relation to function `combining-codepoint-list`?) … original spec: X: add X combiner to all codepoints where X in {bold, italic, cursive, sans-serif, strike-through, underline, slash-through, double-struck, monospace, Fraktur, upside-down, bubble text, square text, small-caps, fullwidth, zigzag-above, diamond-enclosed, redact, circle-backslash}, c.f. https://yaytext.com/square-text/
+* op revers: for reversing a string: desserts → stressed, live → evil, reward → drawer (be aware of combining characters)
 * op cmp-lexicographic: lexicographic comparison of two strings
 * op cmp of two strings (is cmp in rust lexicographic? if so, ignore this)
 * op camelcase: locale-dependent casing Unicode operation
@@ -17,6 +20,7 @@
 * op uppercase-localized: locale-dependent Unicode casing operation
 * op replace-limited-from-start, replace-limited-from-end
 * op byte-index-of-first-occurence, byte-index-of-last-occurence
+* op remove-lineterminator: remove any line terminator characters at the end of the string
 * op split-limited-from-start, split-limited-from-end, split-…-with-separator
 * op split-lines-with-offsets: split_by_linebreaks but also return the UTF-8 indices where line breaks happened
 * op split-with-offsets: split but also return the UTF-8 indices where line breaks happened
